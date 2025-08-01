@@ -1,5 +1,13 @@
 import { hash } from 'bcrypt';
-import { BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BeforeInsert,
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Role } from '../enums/role.enum';
 
 @Entity()
@@ -7,17 +15,20 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ unique: true })
   username: string;
 
+  @Column({ unique: true })
+  email: string;
+
+  @Column({ default: false })
+  emailVerified: boolean;
+
   @Column({ nullable: true })
-  email?: string;
+  firstName?: string;
 
-  @Column()
-  firstName: string;
-
-  @Column()
-  lastName: string;
+  @Column({ nullable: true })
+  lastName?: string;
 
   @Column({ nullable: true })
   avatarUrl?: string;
@@ -34,6 +45,15 @@ export class User {
 
   @Column({ type: 'text', nullable: true })
   refreshToken: string | null;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
 
   @BeforeInsert()
   async hashPassword() {
