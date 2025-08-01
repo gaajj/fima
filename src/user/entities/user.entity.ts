@@ -1,14 +1,17 @@
-import { hash } from 'bcrypt';
 import {
-  BeforeInsert,
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Role } from '../enums/role.enum';
+import { UserCredential } from './user-credential.entity';
+import { UserProfile } from './user-profile.entity';
+import { Session } from './session.entity';
 
 @Entity()
 export class User {
@@ -21,30 +24,12 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column({ default: false })
-  emailVerified: boolean;
-
-  @Column({ nullable: true })
-  firstName?: string;
-
-  @Column({ nullable: true })
-  lastName?: string;
-
-  @Column({ nullable: true })
-  avatarUrl?: string;
-
-  @Column()
-  hashedPassword: string;
-
   @Column({
     type: 'enum',
     enum: Role,
     default: Role.USER,
   })
   role: Role;
-
-  @Column({ type: 'text', nullable: true })
-  refreshToken: string | null;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -55,8 +40,12 @@ export class User {
   @DeleteDateColumn()
   deletedAt: Date;
 
-  @BeforeInsert()
-  async hashPassword() {
-    this.hashedPassword = await hash(this.hashedPassword, 10);
-  }
+  @OneToOne(() => UserCredential, (c) => c.user, { cascade: true })
+  credential: UserCredential;
+
+  @OneToMany(() => Session, (s) => s.user)
+  sessions: Session[];
+
+  @OneToOne(() => UserProfile, (p) => p.user, { cascade: true })
+  profile: UserProfile;
 }

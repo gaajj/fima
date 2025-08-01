@@ -1,12 +1,14 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { compare } from 'bcrypt';
-import { UserService } from 'src/user/user.service';
+import { compare, hash } from 'bcrypt';
+import { UserService } from '../user/user.service';
 import { AuthJwtPayloadDto } from './types/auth-jwt-payload.dto';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import { ConfigType } from '@nestjs/config';
-import { hash, verify } from 'argon2';
-import { CurrentUser } from './types/current-user.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../user/entities/user.entity';
+import { Session } from '../user/entities/session.entity';
 
 @Injectable()
 export class AuthService {
@@ -14,81 +16,128 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     @Inject(refreshJwtConfig.KEY)
-    private readonly refreshTokenConfig: ConfigType<typeof refreshJwtConfig>,
+    private readonly refreshCfg: ConfigType<typeof refreshJwtConfig>,
+    @InjectRepository(Session)
+    private readonly sesRepo: Repository<Session>,
   ) {}
 
   async validateUser(username: string, password: string) {
-    const user = await this.userService.findByUsername(username);
+    const user = await this.userService.findByUsernameWithCred(username);
     if (!user) throw new UnauthorizedException('User not found.');
 
-    const passwordMatch = await compare(password, user.hashedPassword);
+    const passwordMatch = await compare(
+      password,
+      user.credential.hashedPassword,
+    );
     if (!passwordMatch) throw new UnauthorizedException('Invalid credentials.');
 
     return { id: user.id };
   }
 
   async login(userId: string) {
-    const { accessToken, refreshToken } = await this.generateTokens(userId);
-    const hashedRefreshedToken = await hash(refreshToken);
-    await this.userService.updateHashedRefreshToken(
-      userId,
-      hashedRefreshedToken,
+    const session = await this.sesRepo.save(
+      this.sesRepo.create({
+        user: { id: userId } as User,
+        hashedRefreshToken: '',
+        userAgent: 'todo',
+        ip: 'todo',
+      }),
     );
-    return {
-      id: userId,
-      accessToken,
-      refreshToken,
-    };
+
+    const tokens = await this.generateTokens(userId, session);
+
+    await this.rotateRefreshToken(session.id, {
+      newHash: await hash(tokens.refreshToken, 10),
+      bumpVersion: false,
+    });
+
+    return { id: userId, ...tokens };
   }
 
-  async generateTokens(userId: string) {
-    const payload: AuthJwtPayloadDto = { sub: userId };
+  async refreshToken(userId: string, sessionId: string) {
+    const session = await this.sesRepo.findOneByOrFail({
+      id: sessionId,
+      user: { id: userId },
+      revoked: false,
+    });
+
+    await this.rotateRefreshToken(sessionId, { bumpVersion: true });
+
+    const updatedSession = {
+      ...session,
+      tokenVersion: session.tokenVersion + 1,
+    };
+    const tokens = await this.generateTokens(userId, updatedSession);
+
+    await this.rotateRefreshToken(sessionId, {
+      newHash: await hash(tokens.refreshToken, 10),
+    });
+
+    return tokens;
+  }
+
+  async generateTokens(sub: string, session: Session) {
+    const payload: AuthJwtPayloadDto = {
+      sub,
+      sid: session.id,
+      ver: session.tokenVersion,
+    };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload),
-      this.jwtService.signAsync(payload, this.refreshTokenConfig),
+      this.jwtService.signAsync(payload, this.refreshCfg),
     ]);
-    return {
-      accessToken,
-      refreshToken,
-    };
-  }
-
-  async refreshToken(userId: string) {
-    const { accessToken, refreshToken } = await this.generateTokens(userId);
-    await this.userService.updateHashedRefreshToken(
-      userId,
-      await hash(refreshToken),
-    );
     return { accessToken, refreshToken };
-    // const payload: AuthJwtPayloadDto = { sub: userId };
-    // const accessToken = this.jwtService.sign(payload);
-    // return {
-    //   id: userId,
-    //   accessToken,
-    // };
   }
 
-  async validateRefreshToken(userId: string, refreshToken: string) {
-    const user = await this.userService.findOneForAuth(userId);
-    if (!user || !user.refreshToken)
-      throw new UnauthorizedException('Invalid refresh token.');
+  async rotateRefreshToken(
+    sessionId: string,
+    opts: { newHash?: string | null; bumpVersion?: boolean } = {},
+  ) {
+    if (opts.bumpVersion) {
+      await this.sesRepo.increment({ id: sessionId }, 'tokenVersion', 1);
+    }
 
-    const refreshTokenMatch = await verify(user.refreshToken, refreshToken);
-    if (!refreshTokenMatch)
-      throw new UnauthorizedException('Invalid refresh token.');
-
-    return { id: userId };
+    await this.sesRepo.update(sessionId, {
+      hashedRefreshToken: opts.newHash ?? undefined,
+      revoked: opts.newHash === null,
+    });
   }
 
-  async logout(userId: string) {
-    await this.userService.updateHashedRefreshToken(userId, null);
+  async logout(sessionId: string) {
+    await this.rotateRefreshToken(sessionId, {
+      newHash: null,
+      bumpVersion: true,
+    });
     return { message: 'Logged out.' };
   }
 
-  async validateJwtUser(userId: string) {
-    const user = await this.userService.findOneForAuth(userId);
-    if (!user) throw new UnauthorizedException('User not found.');
-    if (!user.refreshToken) throw new UnauthorizedException('Not logged in.');
-    return { id: user.id, role: user.role };
+  async validateRefreshToken(
+    sessionId: string,
+    userId: string,
+    candidate: string,
+  ) {
+    const session = await this.sesRepo.findOneBy({
+      id: sessionId,
+      user: { id: userId },
+    });
+    if (!session || session.revoked)
+      throw new UnauthorizedException('Session revoked.');
+
+    const tokenMatch = await compare(candidate, session.hashedRefreshToken);
+    if (!tokenMatch) throw new UnauthorizedException('Invalid refresh token.');
+
+    return { id: userId, sid: sessionId };
+  }
+
+  async validateJwtUser(userId: string, sessionId: string, tokenVer: number) {
+    const session = await this.sesRepo.findOne({
+      where: { id: sessionId, user: { id: userId } },
+      relations: ['user'],
+    });
+    if (!session || session.revoked)
+      throw new UnauthorizedException('Session revoked.');
+    if (session.tokenVersion !== tokenVer)
+      throw new UnauthorizedException('Access token outdated.');
+    return { id: userId, role: session.user.role, sid: sessionId };
   }
 }

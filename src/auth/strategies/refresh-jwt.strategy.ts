@@ -32,7 +32,11 @@ export class RefreshJwtStrategy extends PassportStrategy(
       throw new UnauthorizedException('Missing authorization header');
 
     const refreshToken = authHeader.replace('Bearer', '').trim();
-    const userId = payload.sub;
-    return this.authService.validateRefreshToken(userId, refreshToken);
+
+    return this.authService.validateRefreshToken(
+      payload.sid,
+      payload.sub,
+      refreshToken,
+    );
   }
 }

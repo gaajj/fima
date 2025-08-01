@@ -7,8 +7,8 @@ import {
   Post,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { Public } from 'src/auth/decorators/public.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Controller('user')

@@ -4,10 +4,12 @@ import { UserFactory } from './factories/user.factory';
 import MainSeeder from './seeds/main.seeder';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { runSeeders, SeederOptions } from 'typeorm-extension';
+import { UserCredentialFactory } from './factories/user-credential.factory';
+import { UserProfileFactory } from './factories/user-profile.factory';
 
 const options: DataSourceOptions & SeederOptions = {
   ...dbConfig(),
-  factories: [UserFactory],
+  factories: [UserFactory, UserCredentialFactory, UserProfileFactory],
   seeds: [MainSeeder],
 };
 

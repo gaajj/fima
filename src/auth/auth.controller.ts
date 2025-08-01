@@ -8,7 +8,6 @@ import {
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RefreshAuthGuard } from './guards/refresh-auth.guard';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
 
@@ -27,12 +26,15 @@ export class AuthController {
   @Public()
   @UseGuards(RefreshAuthGuard)
   @Post('refresh')
-  refreshToken(@CurrentUser('id') userId: string) {
-    return this.authService.refreshToken(userId);
+  refreshToken(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('sid') sessionId: string,
+  ) {
+    return this.authService.refreshToken(userId, sessionId);
   }
 
   @Post('logout')
-  logout(@CurrentUser('id') userId: string) {
-    return this.authService.logout(userId);
+  logout(@CurrentUser('sid') sessionId: string) {
+    return this.authService.logout(sessionId);
   }
 }
