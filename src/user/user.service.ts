@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Not, ObjectIdColumn, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserCredential } from './entities/user-credential.entity';
 import { UserProfile } from './entities/user-profile.entity';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -63,5 +64,33 @@ export class UserService {
         relations: ['profile'],
       });
     });
+  }
+
+  async update(userId: string, dto: UpdateUserDto): Promise<User | null> {
+    if (dto.username || dto.email) {
+      const conflict = await this.userRepo.exists({
+        where: [
+          dto.username ? { username: dto.username, id: Not(userId) } : {},
+          dto.email ? { email: dto.email, id: Not(userId) } : {},
+        ],
+      });
+      if (conflict)
+        throw new BadRequestException('Username or email already in use.');
+    }
+
+    const { profile, ...userProps } = dto;
+    if (Object.keys(userProps).length) {
+      await this.userRepo.update({ id: userId }, userProps);
+    }
+
+    if (profile && Object.keys(profile).length) {
+      await this.profRepo.update({ userId }, profile);
+    }
+
+    return this.findOne(userId);
+  }
+
+  async remove(userId: string): Promise<void> {
+    await this.userRepo.softDelete({ id: userId });
   }
 }
