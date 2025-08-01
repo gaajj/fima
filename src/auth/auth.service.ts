@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
 import { Session } from '../user/entities/session.entity';
+import { AuthTokensDto } from './dto/auth-tokens.dto';
 
 @Injectable()
 export class AuthService {
@@ -34,7 +35,7 @@ export class AuthService {
     return { id: user.id };
   }
 
-  async login(userId: string) {
+  async login(userId: string): Promise<AuthTokensDto & { id: string }> {
     const session = await this.sesRepo.save(
       this.sesRepo.create({
         user: { id: userId } as User,
@@ -54,7 +55,10 @@ export class AuthService {
     return { id: userId, ...tokens };
   }
 
-  async refreshToken(userId: string, sessionId: string) {
+  async refreshToken(
+    userId: string,
+    sessionId: string,
+  ): Promise<AuthTokensDto> {
     const session = await this.sesRepo.findOneByOrFail({
       id: sessionId,
       user: { id: userId },
@@ -76,7 +80,7 @@ export class AuthService {
     return tokens;
   }
 
-  async generateTokens(sub: string, session: Session) {
+  async generateTokens(sub: string, session: Session): Promise<AuthTokensDto> {
     const payload: AuthJwtPayloadDto = {
       sub,
       sid: session.id,

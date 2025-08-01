@@ -10,20 +10,21 @@ import { UserService } from './user.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
+import { User } from './entities/user.entity';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('me')
-  getMe(@CurrentUser('id') userId: string) {
+  getMe(@CurrentUser('id') userId: string): Promise<User | null> {
     return this.userService.findOne(userId);
   }
 
   @Public()
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  createUser(@Body() dto: CreateUserDto) {
+  createUser(@Body() dto: CreateUserDto): Promise<User> {
     return this.userService.create(dto);
   }
 }

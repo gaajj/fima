@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import { User } from './user.entity';
 import {
   Column,
@@ -14,15 +15,19 @@ export class Session {
   id: string;
 
   @ManyToOne(() => User, (u) => u.sessions, { onDelete: 'CASCADE' })
+  @Exclude()
   user: User;
 
   @Column()
+  @Exclude()
   hashedRefreshToken: string;
 
   @Column({ default: 0 })
+  @Exclude()
   tokenVersion: number;
 
   @Column({ default: false })
+  @Exclude()
   revoked: boolean;
 
   @Column({ nullable: true })

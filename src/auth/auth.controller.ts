@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   HttpCode,
   HttpStatus,
@@ -10,16 +11,22 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RefreshAuthGuard } from './guards/refresh-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
+import { LoginDto } from './dto/login.dto';
+import { AuthTokensDto } from './dto/auth-tokens.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
-  @HttpCode(HttpStatus.OK)
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@CurrentUser('id') userId: string) {
+  @HttpCode(HttpStatus.OK)
+  async login(
+    @Body() _ /*validated*/ : LoginDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<LoginResponseDto> {
     return this.authService.login(userId);
   }
 
@@ -29,7 +36,7 @@ export class AuthController {
   refreshToken(
     @CurrentUser('id') userId: string,
     @CurrentUser('sid') sessionId: string,
-  ) {
+  ): Promise<AuthTokensDto> {
     return this.authService.refreshToken(userId, sessionId);
   }
 

@@ -24,26 +24,21 @@ export class UserService {
     });
   }
 
-  async findOne(userId: string) {
-    const user = await this.userRepo.findOne({
+  async findOne(userId: string): Promise<User | null> {
+    return await this.userRepo.findOne({
       where: { id: userId },
       relations: ['profile'],
     });
-
-    if (!user) return null;
-    const { profile, ...core } = user;
-    return { ...core, ...profile };
   }
 
   async findOneForAuth(userId: string) {
     return this.userRepo.findOne({
       where: { id: userId },
       relations: ['refreshTokens'],
-      // relations: ['role', 'refreshTokens'],
     });
   }
 
-  async create(dto: CreateUserDto) {
+  async create(dto: CreateUserDto): Promise<User> {
     const exists = await this.userRepo.exists({
       where: [{ username: dto.username }, { email: dto.email }],
     });
@@ -63,7 +58,10 @@ export class UserService {
 
       await m.save(m.create(UserProfile, { user, userId: user.id }));
 
-      return { id: user.id, username: user.username, email: user.email };
+      return m.findOneOrFail(User, {
+        where: { id: user.id },
+        relations: ['profile'],
+      });
     });
   }
 }

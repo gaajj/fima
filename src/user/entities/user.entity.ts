@@ -12,6 +12,7 @@ import { Role } from '../enums/role.enum';
 import { UserCredential } from './user-credential.entity';
 import { UserProfile } from './user-profile.entity';
 import { Session } from './session.entity';
+import { Exclude, Expose } from 'class-transformer';
 
 @Entity()
 export class User {
@@ -38,14 +39,22 @@ export class User {
   updatedAt: Date;
 
   @DeleteDateColumn()
+  @Exclude()
   deletedAt: Date;
 
   @OneToOne(() => UserCredential, (c) => c.user, { cascade: true })
+  @Exclude()
   credential: UserCredential;
 
   @OneToMany(() => Session, (s) => s.user)
+  @Exclude()
   sessions: Session[];
 
   @OneToOne(() => UserProfile, (p) => p.user, { cascade: true })
   profile: UserProfile;
+
+  @Expose()
+  get isAdmin() {
+    return this.role === Role.ADMIN;
+  }
 }
