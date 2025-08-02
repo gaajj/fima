@@ -13,6 +13,7 @@ import { UserCredential } from './user-credential.entity';
 import { UserProfile } from './user-profile.entity';
 import { Session } from './session.entity';
 import { Exclude, Expose } from 'class-transformer';
+import { EmailVerification } from 'src/auth/email-verification/entities/email-verification.entity';
 
 @Entity()
 export class User {
@@ -24,6 +25,9 @@ export class User {
 
   @Column({ unique: true })
   email: string;
+
+  @Column({ default: false })
+  emailVerified: boolean;
 
   @Column({
     type: 'enum',
@@ -52,6 +56,9 @@ export class User {
 
   @OneToOne(() => UserProfile, (p) => p.user, { cascade: true })
   profile: UserProfile;
+
+  @OneToMany(() => EmailVerification, (v) => v.user)
+  emailVerifications: EmailVerification[];
 
   @Expose()
   get isAdmin() {

@@ -14,10 +14,14 @@ import { Public } from '../auth/decorators/public.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { EmailVerificationService } from 'src/auth/email-verification/email-verification.service';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly evService: EmailVerificationService,
+  ) {}
 
   @Get('me')
   getMe(@CurrentUser('id') userId: string): Promise<User | null> {
@@ -27,8 +31,10 @@ export class UserController {
   @Public()
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  createUser(@Body() dto: CreateUserDto): Promise<User> {
-    return this.userService.create(dto);
+  async createUser(@Body() dto: CreateUserDto) {
+    const user = await this.userService.create(dto);
+    await this.evService.sendVerificationEmail(user);
+    return user;
   }
 
   @Patch()

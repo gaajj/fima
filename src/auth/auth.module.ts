@@ -14,10 +14,12 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { UserModule } from '../user/user.module';
 import { Session } from '../user/entities/session.entity';
+import { EmailVerificationModule } from './email-verification/email-verification.module';
 
 @Module({
   imports: [
     UserModule,
+    EmailVerificationModule,
     TypeOrmModule.forFeature([Session]),
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),

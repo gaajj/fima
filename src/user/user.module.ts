@@ -6,10 +6,12 @@ import { User } from './entities/user.entity';
 import { UserCredential } from './entities/user-credential.entity';
 import { UserProfile } from './entities/user-profile.entity';
 import { Session } from './entities/session.entity';
+import { EmailVerificationModule } from 'src/auth/email-verification/email-verification.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, UserCredential, Session, UserProfile]),
+    EmailVerificationModule,
   ],
   controllers: [UserController],
   providers: [UserService],
