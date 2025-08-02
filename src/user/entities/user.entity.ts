@@ -13,7 +13,7 @@ import { UserCredential } from './user-credential.entity';
 import { UserProfile } from './user-profile.entity';
 import { Session } from './session.entity';
 import { Exclude, Expose } from 'class-transformer';
-import { EmailVerification } from 'src/auth/email-verification/entities/email-verification.entity';
+import { EmailVerification } from '../../auth/email-verification/entities/email-verification.entity';
 
 @Entity()
 export class User {

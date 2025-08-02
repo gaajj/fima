@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -20,12 +21,16 @@ export class EmailVerification {
   @Column()
   expiresAt: Date;
 
-  @Column({ default: false })
-  consumed: boolean;
+  @Column({ nullable: true })
+  verifiedAt?: Date;
 
   @ManyToOne(() => User, (u) => u.emailVerifications, { onDelete: 'CASCADE' })
   user: User;
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @Index()
+  @Column({ default: false })
+  expired: boolean;
 }
