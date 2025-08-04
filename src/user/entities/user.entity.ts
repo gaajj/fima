@@ -15,7 +15,7 @@ import { Session } from './session.entity';
 import { Exclude, Expose } from 'class-transformer';
 import { EmailVerification } from '../../auth/email-verification/entities/email-verification.entity';
 
-@Entity()
+@Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;

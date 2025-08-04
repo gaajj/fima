@@ -9,7 +9,7 @@ import {
 import { User } from '../../../user/entities/user.entity';
 import { Exclude } from 'class-transformer';
 
-@Entity()
+@Entity('email_verifications')
 export class EmailVerification {
   @PrimaryGeneratedColumn('uuid')
   id: string;
