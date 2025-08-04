@@ -1,7 +1,11 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import {
+  ClassSerializerInterceptor,
+  ClassSerializerInterceptorOptions,
+  ValidationPipe,
+} from '@nestjs/common';
 
 async function bootstrap() {
   const port = process.env.API_PORT ? +process.env.API_PORT : 3000;
@@ -18,7 +22,12 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+  const transformOptions: ClassSerializerInterceptorOptions = {
+    excludeExtraneousValues: true,
+  };
+  app.useGlobalInterceptors(
+    new ClassSerializerInterceptor(app.get(Reflector), transformOptions),
+  );
 
   const origins = (process.env.CORS_ORIGIN ?? '')
     .split(',')
