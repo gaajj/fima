@@ -7,6 +7,7 @@ import dbConfig from './config/db.config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { MailerModule } from './mailer/mailer.module';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { MailerModule } from './mailer/mailer.module';
     }),
     UserModule,
     AuthModule,
+    FilesModule,
     MailerModule,
   ],
   controllers: [AppController],
