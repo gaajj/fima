@@ -3,6 +3,7 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
+  Ip,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +15,7 @@ import { Public } from './decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
 import { AuthTokensDto } from './dto/auth-tokens.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
+import { UserAgent } from './decorators/user-agent.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -25,9 +27,11 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() _ /*validated*/ : LoginDto,
+    @Ip() ip: string,
+    @UserAgent() userAgenet: string,
     @CurrentUser('id') userId: string,
   ): Promise<LoginResponseDto> {
-    return this.authService.login(userId);
+    return this.authService.login(userId, ip, userAgenet);
   }
 
   @Public()

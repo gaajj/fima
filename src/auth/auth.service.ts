@@ -35,13 +35,17 @@ export class AuthService {
     return { id: user.id };
   }
 
-  async login(userId: string): Promise<AuthTokensDto & { id: string }> {
+  async login(
+    userId: string,
+    ip: string,
+    userAgent: string,
+  ): Promise<AuthTokensDto & { id: string }> {
     const session = await this.sesRepo.save(
       this.sesRepo.create({
         user: { id: userId } as User,
         hashedRefreshToken: '',
-        userAgent: 'todo',
-        ip: 'todo',
+        userAgent: userAgent,
+        ip: ip,
       }),
     );
 
