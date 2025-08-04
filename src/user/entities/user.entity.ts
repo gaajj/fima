@@ -14,6 +14,7 @@ import { UserProfile } from './user-profile.entity';
 import { Session } from './session.entity';
 import { Exclude, Expose } from 'class-transformer';
 import { EmailVerification } from '../../auth/email-verification/entities/email-verification.entity';
+import { FilePermission } from 'src/files/entities/file-permission.entity';
 
 @Entity('users')
 export class User {
@@ -59,6 +60,9 @@ export class User {
 
   @OneToMany(() => EmailVerification, (v) => v.user)
   emailVerifications: EmailVerification[];
+
+  @OneToMany(() => FilePermission, (p) => p.user)
+  filePermissions: FilePermission[];
 
   @Expose()
   get isAdmin() {

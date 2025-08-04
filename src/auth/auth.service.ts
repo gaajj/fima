@@ -23,7 +23,7 @@ export class AuthService {
   ) {}
 
   async validateUser(username: string, password: string) {
-    const user = await this.userService.findByUsernameWithCred(username);
+    const user = await this.userService.findByUsername(username, true);
     if (!user) throw new UnauthorizedException('User not found.');
 
     const passwordMatch = await compare(

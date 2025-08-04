@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Patch,
   Post,
 } from '@nestjs/common';
@@ -15,6 +16,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { EmailVerificationService } from 'src/auth/email-verification/email-verification.service';
+import { PublicUserDto } from './dto/public-user.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Controller('user')
 export class UserController {
@@ -49,5 +52,11 @@ export class UserController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMe(@CurrentUser('id') userId: string): Promise<void> {
     await this.userService.remove(userId);
+  }
+
+  @Get(':id')
+  async getUserById(@Param('id') userId: string): Promise<PublicUserDto> {
+    const user = await this.userService.findOne(userId);
+    return plainToInstance(PublicUserDto, user);
   }
 }

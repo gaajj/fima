@@ -1,7 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { DataSource, Not, ObjectIdColumn, Repository } from 'typeorm';
+import {
+  DataSource,
+  FindOneOptions,
+  Not,
+  ObjectIdColumn,
+  Repository,
+} from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserCredential } from './entities/user-credential.entity';
 import { UserProfile } from './entities/user-profile.entity';
@@ -18,11 +24,15 @@ export class UserService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findByUsernameWithCred(username: string) {
-    return await this.userRepo.findOne({
+  async findByUsername(
+    username: string,
+    withCredentials: boolean = false,
+  ): Promise<User | null> {
+    const options: FindOneOptions<User> = {
       where: { username },
-      relations: ['credential'],
-    });
+      relations: withCredentials ? ['credential'] : [],
+    };
+    return await this.userRepo.findOne(options);
   }
 
   async findOne(userId: string): Promise<User | null> {

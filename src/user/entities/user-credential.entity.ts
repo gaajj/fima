@@ -10,7 +10,7 @@ import { User } from './user.entity';
 import { hash } from 'bcrypt';
 import { Exclude } from 'class-transformer';
 
-@Entity()
+@Entity('user_credentials')
 export class UserCredential {
   @PrimaryColumn('uuid')
   userId: string;
