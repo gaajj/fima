@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -9,12 +10,12 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesService } from './files.service';
-import { File } from './entities/file.entity';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { plainToInstance } from 'class-transformer';
 import { FileResponseDto } from './dto/file-response.dto';
+import { User } from 'src/user/entities/user.entity';
 
 @Controller('files')
 export class FilesController {
@@ -33,18 +34,18 @@ export class FilesController {
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser('id') userId: string,
-  ): Promise<File> {
+  ): Promise<FileResponseDto> {
     if (!file)
       throw new BadRequestException('No file provided or invalid file type.');
 
-    const { path, originalname, filename, mimetype, size } = file;
-    return this.filesService.create({
-      path,
-      originalName: originalname,
-      displayName: filename,
-      mimeType: mimetype,
-      size: size.toString(),
-      owner: { id: userId } as any,
+    const fileUpload = await this.filesService.create({
+      path: file.path,
+      originalName: file.originalname,
+      displayName: file.filename,
+      mimeType: file.mimetype,
+      size: file.size.toString(),
+      owner: { id: userId } as User,
     });
+    return plainToInstance(FileResponseDto, fileUpload);
   }
 }

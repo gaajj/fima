@@ -4,26 +4,19 @@ import { Tag } from '../entities/tag.entity';
 import { Expose, Type } from 'class-transformer';
 
 export class FileResponseDto {
-  @Expose()
-  id: string;
+  @Expose() id: string;
 
-  @Expose()
-  originalName: string;
+  @Expose() originalName: string;
 
-  @Expose()
-  displayName: string;
+  @Expose() displayName: string;
 
-  @Expose()
-  mimeType: string;
+  @Expose() mimeType: string;
 
-  @Expose()
-  size: string;
+  @Expose() size: string;
 
-  @Expose()
-  createdAt: Date;
+  @Expose() createdAt: Date;
 
-  @Expose()
-  updatedAt: Date;
+  @Expose() updatedAt: Date;
 
   @Expose()
   @Type(() => PublicUserDto)
