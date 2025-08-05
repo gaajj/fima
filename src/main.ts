@@ -6,6 +6,7 @@ import {
   ClassSerializerInterceptorOptions,
   ValidationPipe,
 } from '@nestjs/common';
+import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 
 async function bootstrap() {
   const port = process.env.API_PORT ? +process.env.API_PORT : 3000;
@@ -13,6 +14,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(helmet());
+
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({
