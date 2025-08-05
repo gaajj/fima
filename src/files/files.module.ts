@@ -11,6 +11,8 @@ import { FilesController } from './files.controller';
 import { MulterModule } from '@nestjs/platform-express';
 import { imageFileFilter, multerStorage } from './utils/file-upload.utils';
 import { UPLOAD_CONFIG } from './utils/upload.constats';
+import { CategoriesService } from './categories/categories.service';
+import { CategoriesController } from './categories/categories.controller';
 
 @Module({
   imports: [
@@ -28,7 +30,7 @@ import { UPLOAD_CONFIG } from './utils/upload.constats';
       limits: { fileSize: UPLOAD_CONFIG.MAX_FILE_SIZE },
     }),
   ],
-  providers: [FilesService],
-  controllers: [FilesController],
+  providers: [FilesService, CategoriesService],
+  controllers: [FilesController, CategoriesController],
 })
 export class FilesModule {}
