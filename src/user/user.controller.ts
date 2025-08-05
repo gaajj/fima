@@ -18,6 +18,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { EmailVerificationService } from 'src/auth/email-verification/email-verification.service';
 import { PublicUserDto } from './dto/public-user.dto';
 import { plainToInstance } from 'class-transformer';
+import { MeUserDto } from './dto/me-user.dto';
 
 @Controller('user')
 export class UserController {
@@ -27,25 +28,29 @@ export class UserController {
   ) {}
 
   @Get('me')
-  getMe(@CurrentUser('id') userId: string): Promise<User | null> {
-    return this.userService.findOne(userId);
+  async getMe(@CurrentUser('id') userId: string): Promise<MeUserDto | null> {
+    const user = await this.userService.findOne(userId);
+    if (!user) return null;
+    return plainToInstance(MeUserDto, user);
   }
 
   @Public()
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createUser(@Body() dto: CreateUserDto) {
+  async createUser(@Body() dto: CreateUserDto): Promise<PublicUserDto> {
     const user = await this.userService.create(dto);
     await this.evService.sendVerificationEmail(user);
-    return user;
+    return plainToInstance(PublicUserDto, user);
   }
 
   @Patch()
-  updateMe(
+  async updateMe(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateUserDto,
-  ): Promise<User | null> {
-    return this.userService.update(userId, dto);
+  ): Promise<MeUserDto | null> {
+    const updated = await this.userService.update(userId, dto);
+    if (!updated) return null;
+    return plainToInstance(MeUserDto, updated);
   }
 
   @Delete()

@@ -12,7 +12,7 @@ import { Role } from '../enums/role.enum';
 import { UserCredential } from './user-credential.entity';
 import { UserProfile } from './user-profile.entity';
 import { Session } from './session.entity';
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude } from 'class-transformer';
 import { EmailVerification } from '../../auth/email-verification/entities/email-verification.entity';
 import { FilePermission } from 'src/files/entities/file-permission.entity';
 import { Category } from 'src/files/entities/category.entity';
@@ -49,11 +49,9 @@ export class User {
   deletedAt: Date;
 
   @OneToOne(() => UserCredential, (c) => c.user, { cascade: true })
-  @Exclude()
   credential: UserCredential;
 
   @OneToMany(() => Session, (s) => s.user)
-  @Exclude()
   sessions: Session[];
 
   @OneToOne(() => UserProfile, (p) => p.user, { cascade: true })
@@ -67,9 +65,4 @@ export class User {
 
   @OneToMany(() => Category, (c) => c.createdByUser)
   categories: Category[];
-
-  @Expose()
-  get isAdmin() {
-    return this.role === Role.ADMIN;
-  }
 }

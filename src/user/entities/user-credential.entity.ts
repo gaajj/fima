@@ -8,7 +8,6 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { hash } from 'bcrypt';
-import { Exclude } from 'class-transformer';
 
 @Entity('user_credentials')
 export class UserCredential {
@@ -17,11 +16,9 @@ export class UserCredential {
 
   @OneToOne(() => User, (u) => u.credential, { onDelete: 'CASCADE' })
   @JoinColumn()
-  @Exclude()
   user: User;
 
   @Column()
-  @Exclude()
   hashedPassword: string;
 
   @BeforeInsert()
