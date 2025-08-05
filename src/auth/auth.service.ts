@@ -6,7 +6,7 @@ import { AuthJwtPayloadDto } from './types/auth-jwt-payload.dto';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import { ConfigType } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityNotFoundError, Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
 import { Session } from '../user/entities/session.entity';
 import { AuthTokensDto } from './dto/auth-tokens.dto';
@@ -24,13 +24,17 @@ export class AuthService {
 
   async validateUser(username: string, password: string) {
     const user = await this.userService.findByUsername(username, true);
-    if (!user) throw new UnauthorizedException('User not found.');
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
 
     const passwordMatch = await compare(
       password,
       user.credential.hashedPassword,
     );
-    if (!passwordMatch) throw new UnauthorizedException('Invalid credentials.');
+    if (!passwordMatch) {
+      throw new UnauthorizedException('Invalid credentials.');
+    }
 
     return { id: user.id };
   }
@@ -63,11 +67,19 @@ export class AuthService {
     userId: string,
     sessionId: string,
   ): Promise<AuthTokensDto> {
-    const session = await this.sesRepo.findOneByOrFail({
-      id: sessionId,
-      user: { id: userId },
-      revoked: false,
-    });
+    let session: Session;
+    try {
+      session = await this.sesRepo.findOneByOrFail({
+        id: sessionId,
+        user: { id: userId },
+        revoked: false,
+      });
+    } catch (err) {
+      if (err instanceof EntityNotFoundError) {
+        throw new UnauthorizedException('Session not found or revoked.');
+      }
+      throw err;
+    }
 
     await this.rotateRefreshToken(sessionId, { bumpVersion: true });
 
@@ -112,11 +124,15 @@ export class AuthService {
   }
 
   async logout(sessionId: string) {
-    await this.rotateRefreshToken(sessionId, {
-      newHash: null,
-      bumpVersion: true,
-    });
-    return { message: 'Logged out.' };
+    try {
+      await this.rotateRefreshToken(sessionId, {
+        newHash: null,
+        bumpVersion: true,
+      });
+      return { message: 'Logged out.' };
+    } catch {
+      throw new UnauthorizedException('Failed to logout, session invalid.');
+    }
   }
 
   async validateRefreshToken(

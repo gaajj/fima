@@ -39,6 +39,7 @@ export class AuthController {
   @Public()
   @UseGuards(RefreshAuthGuard)
   @Post('refresh')
+  @HttpCode(HttpStatus.OK)
   async refreshToken(
     @CurrentUser('id') userId: string,
     @CurrentUser('sid') sessionId: string,
@@ -48,6 +49,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @HttpCode(HttpStatus.OK)
   logout(@CurrentUser('sid') sessionId: string) {
     return this.authService.logout(sessionId);
   }

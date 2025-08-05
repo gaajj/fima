@@ -1,13 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import {
-  DataSource,
-  FindOneOptions,
-  Not,
-  ObjectIdColumn,
-  Repository,
-} from 'typeorm';
+import { DataSource, FindOneOptions, Not, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserCredential } from './entities/user-credential.entity';
 import { UserProfile } from './entities/user-profile.entity';
@@ -17,8 +15,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
-    @InjectRepository(UserCredential)
-    private readonly credRepo: Repository<UserCredential>,
     @InjectRepository(UserProfile)
     private readonly profRepo: Repository<UserProfile>,
     private readonly dataSource: DataSource,
@@ -36,56 +32,83 @@ export class UserService {
   }
 
   async findOne(userId: string): Promise<User | null> {
-    return await this.userRepo.findOne({
+    const options: FindOneOptions<User> = {
       where: { id: userId },
       relations: ['profile'],
-    });
-  }
-
-  async findOneForAuth(userId: string) {
-    return this.userRepo.findOne({
-      where: { id: userId },
-      relations: ['refreshTokens'],
-    });
+    };
+    return await this.userRepo.findOne(options);
   }
 
   async create(dto: CreateUserDto): Promise<User> {
-    const exists = await this.userRepo.exists({
-      where: [{ username: dto.username }, { email: dto.email }],
+    const usernameExists = await this.userRepo.findOne({
+      where: { username: dto.username },
     });
-    if (exists) throw new BadRequestException('Username or email in use.');
+    if (usernameExists) {
+      throw new BadRequestException(
+        `Username '${dto.username}' already exists`,
+      );
+    }
 
-    return this.dataSource.transaction(async (m) => {
-      const user = m.create(User, { username: dto.username, email: dto.email });
-      await m.save(user);
+    const emailExists = await this.userRepo.findOne({
+      where: { email: dto.email },
+    });
+    if (emailExists) {
+      throw new BadRequestException(`Email '${dto.email}' already exists`);
+    }
 
-      await m.save(
-        m.create(UserCredential, {
+    return this.dataSource.transaction(async (manager) => {
+      const user = manager.create(User, {
+        username: dto.username,
+        email: dto.email,
+      });
+      await manager.save(user);
+
+      await manager.save(
+        manager.create(UserCredential, {
           user,
           userId: user.id,
           hashedPassword: dto.password,
         }),
       );
 
-      await m.save(m.create(UserProfile, { user, userId: user.id }));
+      await manager.save(
+        manager.create(UserProfile, {
+          user,
+          userId: user.id,
+        }),
+      );
 
-      return m.findOneOrFail(User, {
+      const findOptions: FindOneOptions<User> = {
         where: { id: user.id },
         relations: ['profile'],
-      });
+      };
+      return manager.findOneOrFail(User, findOptions);
     });
   }
 
   async update(userId: string, dto: UpdateUserDto): Promise<User | null> {
-    if (dto.username || dto.email) {
-      const conflict = await this.userRepo.exists({
-        where: [
-          dto.username ? { username: dto.username, id: Not(userId) } : {},
-          dto.email ? { email: dto.email, id: Not(userId) } : {},
-        ],
+    const existingUser = await this.findOne(userId);
+    if (!existingUser) {
+      throw new NotFoundException(`User with ID '${userId}' not found`);
+    }
+
+    if (dto.username) {
+      const conflict = await this.userRepo.findOne({
+        where: { username: dto.username, id: Not(userId) },
       });
-      if (conflict)
-        throw new BadRequestException('Username or email already in use.');
+      if (conflict) {
+        throw new BadRequestException(
+          `Username '${dto.username}' already exists`,
+        );
+      }
+    }
+    if (dto.email) {
+      const conflict = await this.userRepo.findOne({
+        where: { email: dto.email, id: Not(userId) },
+      });
+      if (conflict) {
+        throw new BadRequestException(`Email '${dto.email}' already exists`);
+      }
     }
 
     const { profile, ...userProps } = dto;
@@ -101,6 +124,10 @@ export class UserService {
   }
 
   async remove(userId: string): Promise<void> {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException(`User with ID '${userId}' not found`);
+    }
     await this.userRepo.softDelete({ id: userId });
   }
 }

@@ -28,9 +28,8 @@ export class UserController {
   ) {}
 
   @Get('me')
-  async getMe(@CurrentUser('id') userId: string): Promise<MeUserDto | null> {
+  async getMe(@CurrentUser('id') userId: string): Promise<MeUserDto> {
     const user = await this.userService.findOne(userId);
-    if (!user) return null;
     return plainToInstance(MeUserDto, user);
   }
 
@@ -47,9 +46,8 @@ export class UserController {
   async updateMe(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateUserDto,
-  ): Promise<MeUserDto | null> {
+  ): Promise<MeUserDto> {
     const updated = await this.userService.update(userId, dto);
-    if (!updated) return null;
     return plainToInstance(MeUserDto, updated);
   }
 
