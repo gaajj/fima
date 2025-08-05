@@ -12,10 +12,11 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RefreshAuthGuard } from './guards/refresh-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
-import { LoginDto } from './dto/login.dto';
+import { LoginDto } from './dto/login-request.dto';
 import { AuthTokensDto } from './dto/auth-tokens.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { UserAgent } from './decorators/user-agent.decorator';
+import { plainToInstance } from 'class-transformer';
 
 @Controller('auth')
 export class AuthController {
@@ -28,20 +29,22 @@ export class AuthController {
   async login(
     @Body() _ /*validated*/ : LoginDto,
     @Ip() ip: string,
-    @UserAgent() userAgenet: string,
+    @UserAgent() userAgent: string,
     @CurrentUser('id') userId: string,
   ): Promise<LoginResponseDto> {
-    return this.authService.login(userId, ip, userAgenet);
+    const result = await this.authService.login(userId, ip, userAgent);
+    return plainToInstance(LoginResponseDto, result);
   }
 
   @Public()
   @UseGuards(RefreshAuthGuard)
   @Post('refresh')
-  refreshToken(
+  async refreshToken(
     @CurrentUser('id') userId: string,
     @CurrentUser('sid') sessionId: string,
   ): Promise<AuthTokensDto> {
-    return this.authService.refreshToken(userId, sessionId);
+    const tokens = await this.authService.refreshToken(userId, sessionId);
+    return plainToInstance(AuthTokensDto, tokens);
   }
 
   @Post('logout')
