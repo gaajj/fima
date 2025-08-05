@@ -16,4 +16,9 @@ export class FilesService {
       order: { createdAt: 'DESC' },
     });
   }
+
+  async create(data: Partial<File>): Promise<File> {
+    const file = this.fileRepo.create(data);
+    return this.fileRepo.save(file);
+  }
 }

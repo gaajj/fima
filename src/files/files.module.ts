@@ -8,6 +8,9 @@ import { SharedLink } from './entities/shared-link.entity';
 import { FileComment } from './entities/file-comment.entity';
 import { FilesService } from './files.service';
 import { FilesController } from './files.controller';
+import { MulterModule } from '@nestjs/platform-express';
+import { imageFileFilter, multerStorage } from './utils/file-upload.utils';
+import { UPLOAD_CONFIG } from './utils/upload.constats';
 
 @Module({
   imports: [
@@ -19,6 +22,11 @@ import { FilesController } from './files.controller';
       SharedLink,
       FileComment,
     ]),
+    MulterModule.register({
+      storage: multerStorage,
+      fileFilter: imageFileFilter,
+      limits: { fileSize: UPLOAD_CONFIG.MAX_FILE_SIZE },
+    }),
   ],
   providers: [FilesService],
   controllers: [FilesController],

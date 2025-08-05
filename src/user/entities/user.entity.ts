@@ -15,6 +15,7 @@ import { Session } from './session.entity';
 import { Exclude, Expose } from 'class-transformer';
 import { EmailVerification } from '../../auth/email-verification/entities/email-verification.entity';
 import { FilePermission } from 'src/files/entities/file-permission.entity';
+import { Category } from 'src/files/entities/category.entity';
 
 @Entity('users')
 export class User {
@@ -63,6 +64,9 @@ export class User {
 
   @OneToMany(() => FilePermission, (p) => p.user)
   filePermissions: FilePermission[];
+
+  @OneToMany(() => Category, (c) => c.createdByUser)
+  categories: Category[];
 
   @Expose()
   get isAdmin() {
