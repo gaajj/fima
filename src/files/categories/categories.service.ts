@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from '../entities/category.entity';
 import { Repository } from 'typeorm';
@@ -19,6 +19,16 @@ export class CategoriesService {
   }
 
   async create(name: string, userId: string): Promise<Category> {
+    const exists = await this.categoryRepo.findOne({
+      where: {
+        name,
+        createdByUser: { id: userId } as User,
+      },
+    });
+    if (exists) {
+      throw new BadRequestException(`Category '${name}' already exists`);
+    }
+
     const category = this.categoryRepo.create({
       name,
       createdByUser: { id: userId } as User,

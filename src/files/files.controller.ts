@@ -35,8 +35,9 @@ export class FilesController {
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
-    if (!file)
-      throw new BadRequestException('No file provided or invalid file type.');
+    if (!file) {
+      throw new BadRequestException('No file provided or invalid file type');
+    }
 
     const fileUpload = await this.filesService.create({
       path: file.path,
