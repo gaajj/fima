@@ -1,7 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from './entities/category.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
@@ -33,6 +37,35 @@ export class CategoriesService {
       name,
       createdByUser: { id: userId } as User,
     });
+    return this.categoryRepo.save(category);
+  }
+
+  async update(
+    categoryId: string,
+    categoryName: string,
+    userId: string,
+  ): Promise<Category> {
+    const category = await this.categoryRepo.findOne({
+      where: { id: categoryId, createdByUser: { id: userId } as User },
+    });
+    if (!category) {
+      throw new NotFoundException(`Category with ID '${categoryId}' not found`);
+    }
+
+    const conflict = await this.categoryRepo.findOne({
+      where: {
+        name: categoryName,
+        createdByUser: { id: userId } as User,
+        id: Not(categoryId),
+      },
+    });
+    if (conflict) {
+      throw new BadRequestException(
+        `Category '${categoryName}' already exists`,
+      );
+    }
+
+    category.name = categoryName;
     return this.categoryRepo.save(category);
   }
 }
