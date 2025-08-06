@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -16,6 +17,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { plainToInstance } from 'class-transformer';
 import { FileResponseDto } from './dto/file-response.dto';
 import { User } from 'src/user/entities/user.entity';
+import { AddCategoryDto } from './categories/dto/add-category.dto';
 
 @Controller('files')
 export class FilesController {
@@ -48,5 +50,15 @@ export class FilesController {
       owner: { id: userId } as User,
     });
     return plainToInstance(FileResponseDto, fileUpload);
+  }
+
+  @Post(':id/category')
+  @HttpCode(HttpStatus.OK)
+  async addCategoryToFile(
+    @Param('id') fileId: string,
+    @Body() dto: AddCategoryDto,
+  ): Promise<FileResponseDto> {
+    const updated = await this.filesService.addCategory(fileId, dto.categoryId);
+    return plainToInstance(FileResponseDto, updated);
   }
 }
