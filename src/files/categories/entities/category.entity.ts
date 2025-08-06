@@ -1,4 +1,3 @@
-import { Expose } from 'class-transformer';
 import { User } from 'src/user/entities/user.entity';
 import {
   Column,
@@ -16,8 +15,7 @@ export class Category {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
-  @Expose()
+  @Column()
   name: string;
 
   @ManyToOne(() => User, (u) => u.categories, { onDelete: 'CASCADE' })

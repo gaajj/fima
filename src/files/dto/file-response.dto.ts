@@ -1,5 +1,5 @@
 import { PublicUserDto } from 'src/user/dto/public-user.dto';
-import { Category } from '../entities/category.entity';
+import { Category } from '../categories/entities/category.entity';
 import { Tag } from '../entities/tag.entity';
 import { Expose, Type } from 'class-transformer';
 

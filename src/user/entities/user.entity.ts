@@ -15,7 +15,7 @@ import { Session } from './session.entity';
 import { Exclude } from 'class-transformer';
 import { EmailVerification } from '../../auth/email-verification/entities/email-verification.entity';
 import { FilePermission } from 'src/files/entities/file-permission.entity';
-import { Category } from 'src/files/entities/category.entity';
+import { Category } from 'src/files/categories/entities/category.entity';
 
 @Entity('users')
 export class User {
