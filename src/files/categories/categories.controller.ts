@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
@@ -27,11 +37,24 @@ export class CategoriesController {
 
   @Patch(':id')
   async update(
-    @Param('id') id: string,
+    @Param('id') categoryId: string,
     @Body() dto: UpdateCategoryDto,
     @CurrentUser('id') userId: string,
   ): Promise<CategoryDto> {
-    const updated = await this.categoriesService.update(id, dto.name, userId);
+    const updated = await this.categoriesService.update(
+      categoryId,
+      dto.name,
+      userId,
+    );
     return plainToInstance(CategoryDto, updated);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(
+    @Param('id') categoryId: string,
+    @CurrentUser('id') userId: string,
+  ): Promise<void> {
+    return this.categoriesService.remove(categoryId, userId);
   }
 }

@@ -68,4 +68,18 @@ export class CategoriesService {
     category.name = categoryName;
     return this.categoryRepo.save(category);
   }
+
+  async remove(categoryId: string, userId: string): Promise<void> {
+    const category = await this.categoryRepo.findOne({
+      where: {
+        id: categoryId,
+        createdByUser: { id: userId } as User,
+      },
+    });
+    if (!category) {
+      throw new NotFoundException(`Category with ID '${categoryId}' not found`);
+    }
+
+    await this.categoryRepo.softRemove(category);
+  }
 }
