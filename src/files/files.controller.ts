@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -30,7 +31,7 @@ export class FilesController {
     return plainToInstance(FileResponseDto, files);
   }
 
-  @Post('upload')
+  @Post()
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.CREATED)
   async uploadFile(
@@ -50,6 +51,15 @@ export class FilesController {
       owner: { id: userId } as User,
     });
     return plainToInstance(FileResponseDto, fileUpload);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(
+    @Param('id') fileId: string,
+    @CurrentUser('id') userId: string,
+  ): Promise<void> {
+    await this.filesService.remove(fileId, userId);
   }
 
   @Post(':id/category')

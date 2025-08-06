@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { File } from './entities/file.entity';
 import { Repository } from 'typeorm';
 import { Category } from './categories/entities/category.entity';
+import { rm } from 'fs/promises';
 
 @Injectable()
 export class FilesService {
@@ -45,5 +50,22 @@ export class FilesService {
     }
 
     return file;
+  }
+
+  async remove(fileId: string, userId: string): Promise<void> {
+    const file = await this.fileRepo.findOne({
+      where: { id: fileId },
+      relations: ['owner'],
+    });
+    if (!file) {
+      throw new NotFoundException(`File with ID '${fileId}' not found`);
+    }
+    if (!file.owner || file.owner.id !== userId) {
+      throw new ForbiddenException(`Not authorized to delete this file`);
+    }
+
+    await rm(file.path, { force: true });
+
+    await this.fileRepo.remove(file);
   }
 }
