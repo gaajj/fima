@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -19,6 +20,7 @@ import { plainToInstance } from 'class-transformer';
 import { FileResponseDto } from './dto/file-response.dto';
 import { User } from 'src/user/entities/user.entity';
 import { AddCategoryDto } from './categories/dto/add-category.dto';
+import { UpdateFileInfoDto } from './dto/update-file-info.dto';
 
 @Controller('files')
 export class FilesController {
@@ -51,6 +53,16 @@ export class FilesController {
       owner: { id: userId } as User,
     });
     return plainToInstance(FileResponseDto, fileUpload);
+  }
+
+  @Patch(':id')
+  async update(
+    @Param('id') fileId: string,
+    @Body() dto: UpdateFileInfoDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<FileResponseDto> {
+    const updated = await this.filesService.updateInfo(fileId, dto, userId);
+    return plainToInstance(FileResponseDto, updated);
   }
 
   @Delete(':id')
