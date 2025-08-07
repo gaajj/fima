@@ -1,7 +1,7 @@
 import { PublicUserDto } from 'src/user/dto/public-user.dto';
-import { Tag } from '../entities/tag.entity';
 import { Expose, Type } from 'class-transformer';
 import { CategoryDto } from '../categories/dto/category-response.dto';
+import { TagResponseDto } from '../tags/dto/tag-response.dto';
 
 export class FileResponseDto {
   @Expose() id: string;
@@ -26,6 +26,7 @@ export class FileResponseDto {
   @Type(() => CategoryDto)
   categories: CategoryDto[];
 
-  @Type(() => Tag)
-  tags: Tag[];
+  @Expose()
+  @Type(() => TagResponseDto)
+  tags: TagResponseDto[];
 }

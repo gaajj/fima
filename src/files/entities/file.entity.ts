@@ -11,7 +11,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
-import { Tag } from './tag.entity';
+import { Tag } from '../tags/entities/tag.entity';
 import { FilePermission } from './file-permission.entity';
 import { SharedLink } from './shared-link.entity';
 import { FileComment } from './file-comment.entity';

@@ -21,6 +21,7 @@ import { FileResponseDto } from './dto/file-response.dto';
 import { User } from 'src/user/entities/user.entity';
 import { AddCategoryDto } from './categories/dto/add-category.dto';
 import { UpdateFileInfoDto } from './dto/update-file-info.dto';
+import { AddTagDto } from './dto/add-tag.dto';
 
 @Controller('files')
 export class FilesController {
@@ -82,5 +83,24 @@ export class FilesController {
   ): Promise<FileResponseDto> {
     const updated = await this.filesService.addCategory(fileId, dto.categoryId);
     return plainToInstance(FileResponseDto, updated);
+  }
+
+  @Post(':id/tag')
+  @HttpCode(HttpStatus.OK)
+  async addTag(
+    @Param('id') fileId: string,
+    @Body() dto: AddTagDto,
+  ): Promise<FileResponseDto> {
+    const updated = await this.filesService.addTag(fileId, dto.tagId);
+    return plainToInstance(FileResponseDto, updated);
+  }
+
+  @Delete(':id/tag/:tagId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeTag(
+    @Param('id') fileId: string,
+    @Param('tagId') tagId: string,
+  ): Promise<void> {
+    await this.filesService.removeTag(fileId, tagId);
   }
 }
