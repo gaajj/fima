@@ -19,7 +19,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { plainToInstance } from 'class-transformer';
 import { FileResponseDto } from './dto/file-response.dto';
 import { User } from 'src/user/entities/user.entity';
-import { AddCategoryDto } from './categories/dto/add-category.dto';
+import { AddCategoryDto } from './dto/add-category.dto';
 import { UpdateFileInfoDto } from './dto/update-file-info.dto';
 import { AddTagDto } from './dto/add-tag.dto';
 
@@ -85,9 +85,18 @@ export class FilesController {
     return plainToInstance(FileResponseDto, updated);
   }
 
+  @Delete(':id/category/:categoryId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeCategoryFromFile(
+    @Param('id') fileId: string,
+    @Param('categoryId') categoryId: string,
+  ): Promise<void> {
+    await this.filesService.removeCategory(fileId, categoryId);
+  }
+
   @Post(':id/tag')
   @HttpCode(HttpStatus.OK)
-  async addTag(
+  async addTagToFile(
     @Param('id') fileId: string,
     @Body() dto: AddTagDto,
   ): Promise<FileResponseDto> {
@@ -97,7 +106,7 @@ export class FilesController {
 
   @Delete(':id/tag/:tagId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async removeTag(
+  async removeTagFromFile(
     @Param('id') fileId: string,
     @Param('tagId') tagId: string,
   ): Promise<void> {

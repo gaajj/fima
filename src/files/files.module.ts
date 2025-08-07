@@ -10,14 +10,14 @@ import { FilesController } from './files.controller';
 import { MulterModule } from '@nestjs/platform-express';
 import { imageFileFilter, multerStorage } from './utils/file-upload.utils';
 import { UPLOAD_CONFIG } from './utils/upload.constats';
-import { CategoriesService } from './categories/categories.service';
-import { CategoriesController } from './categories/categories.controller';
 import { TagsModule } from './tags/tags.module';
 import { Tag } from './tags/entities/tag.entity';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
     TagsModule,
+    CategoriesModule,
     TypeOrmModule.forFeature([
       File,
       Category,
@@ -32,7 +32,7 @@ import { Tag } from './tags/entities/tag.entity';
       limits: { fileSize: UPLOAD_CONFIG.MAX_FILE_SIZE },
     }),
   ],
-  providers: [FilesService, CategoriesService],
-  controllers: [FilesController, CategoriesController],
+  providers: [FilesService],
+  controllers: [FilesController],
 })
 export class FilesModule {}

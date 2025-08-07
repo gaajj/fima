@@ -95,6 +95,18 @@ export class FilesService {
     return file;
   }
 
+  async removeCategory(fileId: string, categoryId: string): Promise<void> {
+    const file = await this.fileRepo.findOne({
+      where: { id: fileId },
+      relations: ['categories'],
+    });
+    if (!file)
+      throw new NotFoundException(`File with ID '${fileId}' not found`);
+
+    file.categories = file.categories.filter((f) => f.id !== categoryId);
+    await this.fileRepo.save(file);
+  }
+
   async addTag(fileId: string, tagId: string): Promise<File> {
     const file = await this.fileRepo.findOne({
       where: { id: fileId },
