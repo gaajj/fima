@@ -105,8 +105,9 @@ export class FilesController {
   async addTagToFile(
     @Param('id') fileId: string,
     @Body() dto: AddTagDto,
+    @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
-    const updated = await this.filesService.addTag(fileId, dto.tagId);
+    const updated = await this.filesService.addTag(fileId, dto.tagId, userId);
     return plainToInstance(FileResponseDto, updated);
   }
 
@@ -115,7 +116,8 @@ export class FilesController {
   async removeTagFromFile(
     @Param('id') fileId: string,
     @Param('tagId') tagId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<void> {
-    await this.filesService.removeTag(fileId, tagId);
+    await this.filesService.removeTag(fileId, tagId, userId);
   }
 }

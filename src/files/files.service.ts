@@ -123,13 +123,15 @@ export class FilesService {
     return this.fileRepo.save(file);
   }
 
-  async addTag(fileId: string, tagId: string): Promise<File> {
+  async addTag(fileId: string, tagId: string, userId: string): Promise<File> {
     const file = await this.fileRepo.findOne({
       where: { id: fileId },
       relations: ['tags', 'owner'],
     });
     if (!file)
       throw new NotFoundException(`File with ID '${fileId}' not found`);
+    if (!file.owner || file.owner.id !== userId)
+      throw new ForbiddenException(`Not authorized`);
 
     const tag = await this.tagRepo.findOneBy({ id: tagId });
     if (!tag) throw new NotFoundException(`Tag with ID '${tagId} not found`);
@@ -141,13 +143,19 @@ export class FilesService {
     return file;
   }
 
-  async removeTag(fileId: string, tagId: string): Promise<void> {
+  async removeTag(
+    fileId: string,
+    tagId: string,
+    userId: string,
+  ): Promise<void> {
     const file = await this.fileRepo.findOne({
       where: { id: fileId },
       relations: ['tags'],
     });
     if (!file)
       throw new NotFoundException(`File with ID '${fileId}' not found`);
+    if (!file.owner || file.owner.id !== userId)
+      throw new ForbiddenException(`Not authorized`);
 
     file.tags = file.tags.filter((t) => t.id !== tagId);
     await this.fileRepo.save(file);
