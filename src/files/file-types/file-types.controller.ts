@@ -13,23 +13,27 @@ import { FileTypeResponseDto } from './dto/file-type-response.dto';
 import { plainToInstance } from 'class-transformer';
 import { UpsertFieldDto } from './dto/upsert-field.dto';
 import { FileTypeFieldResponseDto } from './dto/file-type-field-response.dto';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Role } from 'src/user/enums/role.enum';
 
 @Controller('files/types')
 export class FileTypesController {
   constructor(private readonly svc: FileTypesService) {}
 
   @Get()
-  async list(): Promise<FileTypeResponseDto[]> {
+  async getAll(): Promise<FileTypeResponseDto[]> {
     const fileTypes = await this.svc.findAll();
     return plainToInstance(FileTypeResponseDto, fileTypes);
   }
 
+  @Roles(Role.ADMIN)
   @Post()
   async create(@Body() dto: CreateFileTypeDto): Promise<FileTypeResponseDto> {
     const fileType = await this.svc.create(dto.name, dto.description);
     return plainToInstance(FileTypeResponseDto, fileType);
   }
 
+  @Roles(Role.ADMIN)
   @Patch(':id/fields')
   async upsertField(
     @Param('id') typeId: string,
@@ -39,6 +43,7 @@ export class FileTypesController {
     return plainToInstance(FileTypeFieldResponseDto, fileTypeField);
   }
 
+  @Roles(Role.ADMIN)
   @Delete(':id/fields/:name')
   async removeField(
     @Param('id') typeId: string,
