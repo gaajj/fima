@@ -1,21 +1,15 @@
 import { PublicUserDto } from 'src/user/dto/public-user.dto';
 import { Expose, Type } from 'class-transformer';
-import { CategoryDto } from '../categories/dto/category-response.dto';
 import { TagResponseDto } from '../tags/dto/tag-response.dto';
+import { MinimalFileTypeDto } from '../file-types/dto/file-type-response-minimal.dto';
 
 export class FileResponseDto {
   @Expose() id: string;
-
   @Expose() originalName: string;
-
   @Expose() displayName: string;
-
   @Expose() mimeType: string;
-
   @Expose() size: string;
-
   @Expose() createdAt: Date;
-
   @Expose() updatedAt: Date;
 
   @Expose()
@@ -23,8 +17,11 @@ export class FileResponseDto {
   owner?: PublicUserDto;
 
   @Expose()
-  @Type(() => CategoryDto)
-  categories: CategoryDto[];
+  @Type(() => MinimalFileTypeDto)
+  type?: MinimalFileTypeDto;
+
+  @Expose()
+  metadata: Record<string, any>;
 
   @Expose()
   @Type(() => TagResponseDto)

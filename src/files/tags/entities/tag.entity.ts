@@ -20,7 +20,7 @@ export class Tag {
   @Column()
   name: string;
 
-  @ManyToOne(() => User, (u) => u.categories, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (u) => u.tags, { onDelete: 'CASCADE' })
   createdByUser: User;
 
   @CreateDateColumn()

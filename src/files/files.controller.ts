@@ -19,9 +19,10 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { plainToInstance } from 'class-transformer';
 import { FileResponseDto } from './dto/file-response.dto';
 import { User } from 'src/user/entities/user.entity';
-import { AddCategoryDto } from './dto/add-category.dto';
 import { UpdateFileInfoDto } from './dto/update-file-info.dto';
 import { AddTagDto } from './dto/add-tag.dto';
+import { SetFileTypeDto } from './file-types/dto/set-file-type.dto';
+import { UpdateFileMetadataDto } from './file-types/dto/update-file-metadata.dto';
 
 @Controller('files')
 export class FilesController {
@@ -75,23 +76,28 @@ export class FilesController {
     await this.filesService.remove(fileId, userId);
   }
 
-  @Post(':id/category')
-  @HttpCode(HttpStatus.OK)
-  async addCategoryToFile(
+  @Patch(':id/type')
+  async setType(
     @Param('id') fileId: string,
-    @Body() dto: AddCategoryDto,
+    @Body() dto: SetFileTypeDto,
+    @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
-    const updated = await this.filesService.addCategory(fileId, dto.categoryId);
+    const updated = await this.filesService.setType(fileId, dto.typeId, userId);
     return plainToInstance(FileResponseDto, updated);
   }
 
-  @Delete(':id/category/:categoryId')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async removeCategoryFromFile(
+  @Patch(':id/metadata')
+  async updateMetadata(
     @Param('id') fileId: string,
-    @Param('categoryId') categoryId: string,
-  ): Promise<void> {
-    await this.filesService.removeCategory(fileId, categoryId);
+    @Body() dto: UpdateFileMetadataDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<FileResponseDto> {
+    const updated = await this.filesService.updateMetadata(
+      fileId,
+      dto.metadata,
+      userId,
+    );
+    return plainToInstance(FileResponseDto, updated);
   }
 
   @Post(':id/tag')

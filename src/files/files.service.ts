@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -6,31 +7,34 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { File } from './entities/file.entity';
 import { Repository } from 'typeorm';
-import { Category } from './categories/entities/category.entity';
 import { rm } from 'fs/promises';
 import { UpdateFileInfoDto } from './dto/update-file-info.dto';
 import { Tag } from './tags/entities/tag.entity';
+import { FileType } from './file-types/entities/file-type.entity';
+import Ajv from 'ajv';
+import { FileTypesService } from './file-types/file-types.service';
+
+const ajv = new Ajv({ allErrors: true });
 
 @Injectable()
 export class FilesService {
   constructor(
     @InjectRepository(File)
     private readonly fileRepo: Repository<File>,
-    @InjectRepository(Category)
-    private readonly categoryRepo: Repository<Category>,
     @InjectRepository(Tag)
     private readonly tagRepo: Repository<Tag>,
+    private readonly fileTypesService: FileTypesService,
   ) {}
 
   async findAll(): Promise<File[]> {
     return await this.fileRepo.find({
-      relations: ['categories', 'tags', 'owner'],
+      relations: ['type', 'tags', 'owner'],
       order: { createdAt: 'DESC' },
     });
   }
 
   async create(data: Partial<File>): Promise<File> {
-    const file = this.fileRepo.create(data);
+    const file = this.fileRepo.create({ metadata: {}, ...data });
     return this.fileRepo.save(file);
   }
 
@@ -43,7 +47,7 @@ export class FilesService {
   ): Promise<File> {
     const file = await this.fileRepo.findOne({
       where: { id: fileId },
-      relations: ['owner', 'categories'],
+      relations: ['owner'],
     });
     if (!file) {
       throw new NotFoundException(`File with ID '${fileId}' not found`);
@@ -73,44 +77,56 @@ export class FilesService {
     await this.fileRepo.remove(file);
   }
 
-  async addCategory(fileId: string, categoryId: string): Promise<File> {
+  async setType(fileId: string, typeId: string, userId: string): Promise<File> {
     const file = await this.fileRepo.findOne({
       where: { id: fileId },
-      relations: ['owner', 'categories'],
-    });
-    if (!file) {
-      throw new NotFoundException(`File with ID '${fileId}' not found`);
-    }
-
-    const category = await this.categoryRepo.findOneBy({ id: categoryId });
-    if (!category) {
-      throw new NotFoundException(`Category with ID '${categoryId}' not found`);
-    }
-
-    if (!file.categories.find((c) => c.id === category.id)) {
-      file.categories.push(category);
-      await this.fileRepo.save(file);
-    }
-
-    return file;
-  }
-
-  async removeCategory(fileId: string, categoryId: string): Promise<void> {
-    const file = await this.fileRepo.findOne({
-      where: { id: fileId },
-      relations: ['categories'],
+      relations: ['owner', 'type'],
     });
     if (!file)
       throw new NotFoundException(`File with ID '${fileId}' not found`);
+    if (!file.owner || file.owner.id !== userId)
+      throw new ForbiddenException(`Not authorized`);
 
-    file.categories = file.categories.filter((f) => f.id !== categoryId);
-    await this.fileRepo.save(file);
+    const type = await this.fileTypesService.findOneOrFail(typeId);
+
+    file.type = type;
+    file.metadata = {};
+    return this.fileRepo.save(file);
+  }
+
+  async updateMetadata(
+    fileId: string,
+    metadata: Record<string, any>,
+    userId: string,
+  ): Promise<File> {
+    const file = await this.fileRepo.findOne({
+      where: { id: fileId },
+      relations: ['owner', 'type'],
+    });
+    if (!file)
+      throw new NotFoundException(`File with ID '${fileId}' not found`);
+    if (!file.owner || file.owner.id !== userId)
+      throw new ForbiddenException(`Not authorized`);
+    if (!file.type) throw new BadRequestException('File has no type set');
+
+    const schema = await this.fileTypesService.getJsonSchema(file.type.id);
+    const validate = ajv.compile(schema);
+
+    if (!validate(metadata)) {
+      throw new BadRequestException({
+        message: 'Invalid metadata',
+        details: validate.errors,
+      });
+    }
+
+    file.metadata = metadata;
+    return this.fileRepo.save(file);
   }
 
   async addTag(fileId: string, tagId: string): Promise<File> {
     const file = await this.fileRepo.findOne({
       where: { id: fileId },
-      relations: ['categories', 'tags', 'owner'],
+      relations: ['tags', 'owner'],
     });
     if (!file)
       throw new NotFoundException(`File with ID '${fileId}' not found`);

@@ -25,7 +25,7 @@ export class SharedLink {
   maxDownloads: number;
 
   @Column({ default: 0 })
-  downlaodCount: number;
+  downloadCount: number;
 
   @CreateDateColumn()
   createdAt: Date;

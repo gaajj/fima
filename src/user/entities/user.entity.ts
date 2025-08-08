@@ -15,7 +15,8 @@ import { Session } from './session.entity';
 import { Exclude } from 'class-transformer';
 import { EmailVerification } from '../../auth/email-verification/entities/email-verification.entity';
 import { FilePermission } from 'src/files/entities/file-permission.entity';
-import { Category } from 'src/files/categories/entities/category.entity';
+import { File } from 'src/files/entities/file.entity';
+import { Tag } from 'src/files/tags/entities/tag.entity';
 
 @Entity('users')
 export class User {
@@ -63,6 +64,9 @@ export class User {
   @OneToMany(() => FilePermission, (p) => p.user)
   filePermissions: FilePermission[];
 
-  @OneToMany(() => Category, (c) => c.createdByUser)
-  categories: Category[];
+  @OneToMany(() => File, (f) => f.owner)
+  files: File[];
+
+  @OneToMany(() => Tag, (t) => t.createdByUser)
+  tags: Tag[];
 }

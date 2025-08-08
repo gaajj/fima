@@ -10,11 +10,11 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Category } from '../categories/entities/category.entity';
 import { Tag } from '../tags/entities/tag.entity';
 import { FilePermission } from './file-permission.entity';
 import { SharedLink } from './shared-link.entity';
 import { FileComment } from './file-comment.entity';
+import { FileType } from '../file-types/entities/file-type.entity';
 
 @Entity('files')
 export class File {
@@ -36,19 +36,17 @@ export class File {
   @Column('bigint')
   size: string;
 
+  @ManyToOne(() => FileType, { nullable: true, onDelete: 'SET NULL' })
+  type?: FileType;
+
+  @Column({ type: 'jsonb', default: {} })
+  metadata: Record<string, any>;
+
   @ManyToOne(() => User, (u) => u.sessions, {
     nullable: true,
     onDelete: 'SET NULL',
   })
   owner?: User;
-
-  @ManyToMany(() => Category, { onDelete: 'CASCADE' })
-  @JoinTable({
-    name: 'file_categories',
-    joinColumn: { name: 'fileId', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'categoryId', referencedColumnName: 'id' },
-  })
-  categories: Category[];
 
   @ManyToMany(() => Tag, (t) => t.files, { cascade: true })
   @JoinTable({
