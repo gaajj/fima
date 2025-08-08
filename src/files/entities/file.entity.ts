@@ -42,7 +42,7 @@ export class File {
   @Column({ type: 'jsonb', default: {} })
   metadata: Record<string, any>;
 
-  @ManyToOne(() => User, (u) => u.sessions, {
+  @ManyToOne(() => User, (u) => u.files, {
     nullable: true,
     onDelete: 'SET NULL',
   })
