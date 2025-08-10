@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 import { FieldKind } from '../entities/field-kind.entity';
 
-export class UpsertFieldDto {
+export class UpsertFieldRequestDto {
   @IsString() @MinLength(1) name: string;
   @IsIn(['string', 'number', 'boolean', 'date', 'enum', 'array', 'object'])
   kind: FieldKind;

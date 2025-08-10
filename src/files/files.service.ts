@@ -8,11 +8,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { File } from './entities/file.entity';
 import { Repository } from 'typeorm';
 import { rm } from 'fs/promises';
-import { UpdateFileInfoDto } from './dto/update-file-info.dto';
+import { UpdateFileInfoRequestDto } from './dto/update-file-info.request.dto';
 import { Tag } from './tags/entities/tag.entity';
 import Ajv from 'ajv';
 import { FileTypesService } from './file-types/file-types.service';
-import { AddPermissionDto } from './dto/add-permission.dto';
+import { AddPermissionRequestDto } from './dto/add-permission.request.dto';
 import { FilePermission } from './entities/file-permission.entity';
 import { User } from 'src/user/entities/user.entity';
 
@@ -44,7 +44,7 @@ export class FilesService {
   // TODO: add way to both create and update full file including categories and tags
   async updateInfo(
     fileId: string,
-    dto: UpdateFileInfoDto,
+    dto: UpdateFileInfoRequestDto,
     userId: string,
   ): Promise<File> {
     const file = await this.fileRepo.findOne({
@@ -165,7 +165,7 @@ export class FilesService {
 
   async addPermission(
     fileId: string,
-    dto: AddPermissionDto,
+    dto: AddPermissionRequestDto,
     ownerId: string,
   ): Promise<FilePermission> {
     const file = await this.fileRepo.findOne({

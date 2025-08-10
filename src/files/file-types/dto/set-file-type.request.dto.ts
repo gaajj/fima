@@ -1,5 +1,5 @@
 import { IsUUID } from 'class-validator';
 
-export class SetFileTypeDto {
+export class SetFileTypeRequestDto {
   @IsUUID() typeId: string;
 }

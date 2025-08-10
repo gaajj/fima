@@ -10,11 +10,11 @@ import {
   Post,
 } from '@nestjs/common';
 import { TagsService } from './tags.service';
-import { TagResponseDto } from './dto/tag-response.dto';
+import { TagResponseDto } from './dto/tag.response.dto';
 import { plainToInstance } from 'class-transformer';
-import { CreateTagDto } from './dto/create-tag.dto';
+import { CreateTagRequestDto } from './dto/create-tag.request.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { UpdateTagDto } from './dto/update-tag.dto';
+import { UpdateTagRequestDto } from './dto/update-tag.request.dto';
 
 @Controller('files/tags')
 export class TagsController {
@@ -29,7 +29,7 @@ export class TagsController {
   @Post()
   async create(
     @CurrentUser('id') userId: string,
-    @Body() dto: CreateTagDto,
+    @Body() dto: CreateTagRequestDto,
   ): Promise<TagResponseDto> {
     const tag = await this.tagsService.create(dto, userId);
     return plainToInstance(TagResponseDto, tag);
@@ -39,7 +39,7 @@ export class TagsController {
   async update(
     @Param('tagId') tagId: string,
     @CurrentUser('id') userId: string,
-    @Body() dto: UpdateTagDto,
+    @Body() dto: UpdateTagRequestDto,
   ): Promise<TagResponseDto> {
     const tag = await this.tagsService.update(tagId, dto, userId);
     return plainToInstance(TagResponseDto, tag);

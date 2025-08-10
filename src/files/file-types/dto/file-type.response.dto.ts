@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer';
-import { FileTypeFieldResponseDto } from './file-type-field-response.dto';
+import { FileTypeFieldResponseDto } from './file-type-field.response.dto';
 
 export class FileTypeResponseDto {
   @Expose() id: string;

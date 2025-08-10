@@ -1,7 +1,7 @@
 import { IsEnum, IsUUID } from 'class-validator';
 import { PermissionType } from '../enums/permission-type.enum';
 
-export class AddPermissionDto {
+export class AddPermissionRequestDto {
   @IsUUID()
   userId: string;
 

@@ -1,6 +1,6 @@
 import { IsString, MinLength } from 'class-validator';
 
-export class CreateTagDto {
+export class CreateTagRequestDto {
   @IsString()
   @MinLength(1)
   readonly name: string;

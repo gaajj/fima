@@ -8,11 +8,11 @@ import {
   Post,
 } from '@nestjs/common';
 import { FileTypesService } from './file-types.service';
-import { CreateFileTypeDto } from './dto/create-file-type.dto';
-import { FileTypeResponseDto } from './dto/file-type-response.dto';
+import { CreateFileTypeRequestDto } from './dto/create-file-type.request.dto';
+import { FileTypeResponseDto } from './dto/file-type.response.dto';
 import { plainToInstance } from 'class-transformer';
-import { UpsertFieldDto } from './dto/upsert-field.dto';
-import { FileTypeFieldResponseDto } from './dto/file-type-field-response.dto';
+import { UpsertFieldRequestDto } from './dto/upsert-field.request.dto';
+import { FileTypeFieldResponseDto } from './dto/file-type-field.response.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/user/enums/role.enum';
 
@@ -28,7 +28,9 @@ export class FileTypesController {
 
   @Roles(Role.ADMIN)
   @Post()
-  async create(@Body() dto: CreateFileTypeDto): Promise<FileTypeResponseDto> {
+  async create(
+    @Body() dto: CreateFileTypeRequestDto,
+  ): Promise<FileTypeResponseDto> {
     const fileType = await this.svc.create(dto.name, dto.description);
     return plainToInstance(FileTypeResponseDto, fileType);
   }
@@ -37,7 +39,7 @@ export class FileTypesController {
   @Patch(':typeId/fields')
   async upsertField(
     @Param('typeId') typeId: string,
-    @Body() dto: UpsertFieldDto,
+    @Body() dto: UpsertFieldRequestDto,
   ): Promise<FileTypeFieldResponseDto> {
     const fileTypeField = await this.svc.addOrUpdateField(typeId, dto);
     return plainToInstance(FileTypeFieldResponseDto, fileTypeField);

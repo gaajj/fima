@@ -1,8 +1,8 @@
-import { PublicUserDto } from 'src/user/dto/public-user.dto';
+import { PublicUserResponseDto } from 'src/user/dto/public-user.response.dto';
 import { Expose, Type } from 'class-transformer';
-import { TagResponseDto } from '../tags/dto/tag-response.dto';
-import { MinimalFileTypeDto } from '../file-types/dto/file-type-response-minimal.dto';
-import { FilePermissionResponseDto } from './file-permission-response.dto';
+import { TagResponseDto } from '../tags/dto/tag.response.dto';
+import { FileTypeMinimalDto } from '../file-types/dto/file-type-minimal.response.dto';
+import { FilePermissionResponseDto } from './file-permission.response.dto';
 
 export class FileResponseDto {
   @Expose() id: string;
@@ -14,12 +14,12 @@ export class FileResponseDto {
   @Expose() updatedAt: Date;
 
   @Expose()
-  @Type(() => PublicUserDto)
-  owner?: PublicUserDto;
+  @Type(() => PublicUserResponseDto)
+  owner?: PublicUserResponseDto;
 
   @Expose()
-  @Type(() => MinimalFileTypeDto)
-  type?: MinimalFileTypeDto;
+  @Type(() => FileTypeMinimalDto)
+  type?: FileTypeMinimalDto;
 
   @Expose()
   metadata: Record<string, any>;

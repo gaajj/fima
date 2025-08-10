@@ -1,5 +1,5 @@
 import { IsObject } from 'class-validator';
 
-export class UpdateFileMetadataDto {
+export class UpdateFileMetadataRequestDto {
   @IsObject() metadata: Record<string, any>;
 }

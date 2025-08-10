@@ -12,12 +12,12 @@ import {
 import { UserService } from './user.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserRequestDto } from './dto/create-user.request.dto';
+import { UpdateUserRequestDto } from './dto/update-user.request.dto';
 import { EmailVerificationService } from 'src/auth/email-verification/email-verification.service';
-import { PublicUserDto } from './dto/public-user.dto';
+import { PublicUserResponseDto } from './dto/public-user.response.dto';
 import { plainToInstance } from 'class-transformer';
-import { MeUserDto } from './dto/me-user.dto';
+import { MeUserResponseDto } from './dto/me-user.response.dto';
 
 @Controller('user')
 export class UserController {
@@ -27,27 +27,27 @@ export class UserController {
   ) {}
 
   @Get('me')
-  async getMe(@CurrentUser('id') userId: string): Promise<MeUserDto> {
+  async getMe(@CurrentUser('id') userId: string): Promise<MeUserResponseDto> {
     const user = await this.userService.findOne(userId);
-    return plainToInstance(MeUserDto, user);
+    return plainToInstance(MeUserResponseDto, user);
   }
 
   @Public()
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createUser(@Body() dto: CreateUserDto): Promise<PublicUserDto> {
+  async createUser(@Body() dto: CreateUserRequestDto): Promise<PublicUserResponseDto> {
     const user = await this.userService.create(dto);
     await this.evService.sendVerificationEmail(user);
-    return plainToInstance(PublicUserDto, user);
+    return plainToInstance(PublicUserResponseDto, user);
   }
 
   @Patch()
   async updateMe(
     @CurrentUser('id') userId: string,
-    @Body() dto: UpdateUserDto,
-  ): Promise<MeUserDto> {
+    @Body() dto: UpdateUserRequestDto,
+  ): Promise<MeUserResponseDto> {
     const updated = await this.userService.update(userId, dto);
-    return plainToInstance(MeUserDto, updated);
+    return plainToInstance(MeUserResponseDto, updated);
   }
 
   @Delete()
@@ -57,8 +57,8 @@ export class UserController {
   }
 
   @Get(':userId')
-  async getUserById(@Param('userId') userId: string): Promise<PublicUserDto> {
+  async getUserById(@Param('userId') userId: string): Promise<PublicUserResponseDto> {
     const user = await this.userService.findOne(userId);
-    return plainToInstance(PublicUserDto, user);
+    return plainToInstance(PublicUserResponseDto, user);
   }
 }

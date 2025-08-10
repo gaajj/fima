@@ -1,6 +1,6 @@
 import { IsArray, IsOptional, IsString } from 'class-validator';
 
-export class CreateFileDto {
+export class CreateFileRequestDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

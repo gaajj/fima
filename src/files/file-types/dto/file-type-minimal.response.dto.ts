@@ -1,6 +1,6 @@
 import { Expose } from 'class-transformer';
 
-export class MinimalFileTypeDto {
+export class FileTypeMinimalDto {
   @Expose() id: string;
   @Expose() name: string;
 }

@@ -2,14 +2,14 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcrypt';
 import { UserService } from '../user/user.service';
-import { AuthJwtPayloadDto } from './types/auth-jwt-payload.dto';
+import { AuthJwtPayloadDto } from './types/auth-jwt-payload.type';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import { ConfigType } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityNotFoundError, Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
 import { Session } from '../user/entities/session.entity';
-import { AuthTokensDto } from './dto/auth-tokens.dto';
+import { AuthTokensResponseDto } from './dto/auth-tokens.response.dto';
 
 @Injectable()
 export class AuthService {
@@ -43,7 +43,7 @@ export class AuthService {
     userId: string,
     ip: string,
     userAgent: string,
-  ): Promise<AuthTokensDto & { id: string }> {
+  ): Promise<AuthTokensResponseDto & { id: string }> {
     const session = await this.sesRepo.save(
       this.sesRepo.create({
         user: { id: userId } as User,
@@ -66,7 +66,7 @@ export class AuthService {
   async refreshToken(
     userId: string,
     sessionId: string,
-  ): Promise<AuthTokensDto> {
+  ): Promise<AuthTokensResponseDto> {
     let session: Session;
     try {
       session = await this.sesRepo.findOneByOrFail({
@@ -96,7 +96,7 @@ export class AuthService {
     return tokens;
   }
 
-  async generateTokens(sub: string, session: Session): Promise<AuthTokensDto> {
+  async generateTokens(sub: string, session: Session): Promise<AuthTokensResponseDto> {
     const payload: AuthJwtPayloadDto = {
       sub,
       sid: session.id,

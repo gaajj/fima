@@ -17,14 +17,14 @@ import { Public } from 'src/auth/decorators/public.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { plainToInstance } from 'class-transformer';
-import { FileResponseDto } from './dto/file-response.dto';
+import { FileResponseDto } from './dto/file.response.dto';
 import { User } from 'src/user/entities/user.entity';
-import { UpdateFileInfoDto } from './dto/update-file-info.dto';
-import { AddTagDto } from './dto/add-tag.dto';
-import { SetFileTypeDto } from './file-types/dto/set-file-type.dto';
-import { UpdateFileMetadataDto } from './file-types/dto/update-file-metadata.dto';
-import { AddPermissionDto } from './dto/add-permission.dto';
-import { FilePermissionResponseDto } from './dto/file-permission-response.dto';
+import { UpdateFileInfoRequestDto } from './dto/update-file-info.request.dto';
+import { AddTagRequestDto } from './dto/add-tag.request.dto';
+import { SetFileTypeRequestDto } from './file-types/dto/set-file-type.request.dto';
+import { UpdateFileMetadataRequestDto } from './file-types/dto/update-file-metadata.request.dto';
+import { AddPermissionRequestDto } from './dto/add-permission.request.dto';
+import { FilePermissionResponseDto } from './dto/file-permission.response.dto';
 
 @Controller('files')
 export class FilesController {
@@ -62,7 +62,7 @@ export class FilesController {
   @Patch(':fileId')
   async update(
     @Param('fileId') fileId: string,
-    @Body() dto: UpdateFileInfoDto,
+    @Body() dto: UpdateFileInfoRequestDto,
     @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
     const updated = await this.filesService.updateInfo(fileId, dto, userId);
@@ -81,7 +81,7 @@ export class FilesController {
   @Patch(':fileId/type')
   async setType(
     @Param('fileId') fileId: string,
-    @Body() dto: SetFileTypeDto,
+    @Body() dto: SetFileTypeRequestDto,
     @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
     const updated = await this.filesService.setType(fileId, dto.typeId, userId);
@@ -91,7 +91,7 @@ export class FilesController {
   @Patch(':fileId/metadata')
   async updateMetadata(
     @Param('fileId') fileId: string,
-    @Body() dto: UpdateFileMetadataDto,
+    @Body() dto: UpdateFileMetadataRequestDto,
     @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
     const updated = await this.filesService.updateMetadata(
@@ -106,7 +106,7 @@ export class FilesController {
   @HttpCode(HttpStatus.OK)
   async addTagToFile(
     @Param('fileId') fileId: string,
-    @Body() dto: AddTagDto,
+    @Body() dto: AddTagRequestDto,
     @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
     const updated = await this.filesService.addTag(fileId, dto.tagId, userId);
@@ -127,7 +127,7 @@ export class FilesController {
   @HttpCode(HttpStatus.CREATED)
   async grantPermission(
     @Param('fileId') fileId: string,
-    @Body() dto: AddPermissionDto,
+    @Body() dto: AddPermissionRequestDto,
     @CurrentUser('id') userId: string,
   ): Promise<FilePermissionResponseDto> {
     const file = await this.filesService.addPermission(fileId, dto, userId);
