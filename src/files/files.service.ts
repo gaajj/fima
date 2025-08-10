@@ -136,7 +136,7 @@ export class FilesService {
       throw new ForbiddenException(`Not authorized`);
 
     const tag = await this.tagRepo.findOneBy({ id: tagId });
-    if (!tag) throw new NotFoundException(`Tag with ID '${tagId} not found`);
+    if (!tag) throw new NotFoundException(`Tag with ID '${tagId}' not found`);
 
     if (!file.tags.find((t) => t.id === tag.id)) {
       file.tags.push(tag);
