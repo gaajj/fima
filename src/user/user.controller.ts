@@ -19,7 +19,7 @@ import { PublicUserResponseDto } from './dto/public-user.response.dto';
 import { plainToInstance } from 'class-transformer';
 import { MeUserResponseDto } from './dto/me-user.response.dto';
 
-@Controller('user')
+@Controller('users')
 export class UserController {
   constructor(
     private readonly userService: UserService,
@@ -35,7 +35,9 @@ export class UserController {
   @Public()
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createUser(@Body() dto: CreateUserRequestDto): Promise<PublicUserResponseDto> {
+  async createUser(
+    @Body() dto: CreateUserRequestDto,
+  ): Promise<PublicUserResponseDto> {
     const user = await this.userService.create(dto);
     await this.evService.sendVerificationEmail(user);
     return plainToInstance(PublicUserResponseDto, user);
@@ -57,7 +59,9 @@ export class UserController {
   }
 
   @Get(':userId')
-  async getUserById(@Param('userId') userId: string): Promise<PublicUserResponseDto> {
+  async getUserById(
+    @Param('userId') userId: string,
+  ): Promise<PublicUserResponseDto> {
     const user = await this.userService.findOne(userId);
     return plainToInstance(PublicUserResponseDto, user);
   }
