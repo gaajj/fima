@@ -30,9 +30,15 @@ export class TagsService {
         name: dto.name,
         createdByUser: { id: userId },
       },
+      withDeleted: true,
     });
-    if (exists)
+    if (exists) {
+      if (exists.deletedAt) {
+        await this.tagRepo.recover(exists);
+        return this.tagRepo.findOneOrFail({ where: { id: exists.id } });
+      }
       throw new BadRequestException(`Tag '${dto.name}' aldready exists`);
+    }
 
     const tag = this.tagRepo.create({
       name: dto.name,
@@ -41,7 +47,11 @@ export class TagsService {
     return this.tagRepo.save(tag);
   }
 
-  async update(tagId: string, dto: UpdateTagRequestDto, userId: string): Promise<Tag> {
+  async update(
+    tagId: string,
+    dto: UpdateTagRequestDto,
+    userId: string,
+  ): Promise<Tag> {
     const tag = await this.tagRepo.findOne({
       where: {
         id: tagId,

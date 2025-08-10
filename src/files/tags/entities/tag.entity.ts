@@ -12,7 +12,7 @@ import { File } from '../../entities/file.entity';
 import { User } from 'src/user/entities/user.entity';
 
 @Entity('tags')
-@Index(['createdByUser.id', 'name'], { unique: true })
+@Index('UQ_tag_user_name', ['createdByUser', 'name'], { unique: true })
 export class Tag {
   @PrimaryGeneratedColumn('uuid')
   id: string;
