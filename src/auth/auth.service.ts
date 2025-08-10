@@ -10,6 +10,7 @@ import { EntityNotFoundError, Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
 import { Session } from '../user/entities/session.entity';
 import { AuthTokensResponseDto } from './dto/auth-tokens.response.dto';
+import { LoginResponseDto } from './dto/login.response.dto';
 
 @Injectable()
 export class AuthService {
@@ -43,7 +44,7 @@ export class AuthService {
     userId: string,
     ip: string,
     userAgent: string,
-  ): Promise<AuthTokensResponseDto & { id: string }> {
+  ): Promise<LoginResponseDto> {
     const session = await this.sesRepo.save(
       this.sesRepo.create({
         user: { id: userId } as User,
@@ -60,7 +61,10 @@ export class AuthService {
       bumpVersion: false,
     });
 
-    return { id: userId, ...tokens };
+    const user = await this.userService.findOne(userId);
+    if (!user) throw new UnauthorizedException('User not found');
+
+    return { user, ...tokens };
   }
 
   async refreshToken(
@@ -96,7 +100,10 @@ export class AuthService {
     return tokens;
   }
 
-  async generateTokens(sub: string, session: Session): Promise<AuthTokensResponseDto> {
+  async generateTokens(
+    sub: string,
+    session: Session,
+  ): Promise<AuthTokensResponseDto> {
     const payload: AuthJwtPayloadDto = {
       sub,
       sid: session.id,

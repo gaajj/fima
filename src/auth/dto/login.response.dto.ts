@@ -1,6 +1,8 @@
-import { Expose } from 'class-transformer';
-import { AuthTokensResponseDto } from './auth-tokens.response.dto';
+import { Expose, Type } from 'class-transformer';
+import { MeUserResponseDto } from 'src/user/dto/me-user.response.dto';
 
-export class LoginResponseDto extends AuthTokensResponseDto {
-  @Expose() id: string;
+export class LoginResponseDto {
+  @Expose() @Type(() => MeUserResponseDto) user: MeUserResponseDto;
+  @Expose() accessToken: string;
+  @Expose() refreshToken: string;
 }
