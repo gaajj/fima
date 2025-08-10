@@ -35,22 +35,22 @@ export class TagsController {
     return plainToInstance(TagResponseDto, tag);
   }
 
-  @Patch(':id')
+  @Patch(':tagId')
   async update(
-    @Param('id') id: string,
+    @Param('tagId') tagId: string,
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateTagDto,
   ): Promise<TagResponseDto> {
-    const tag = await this.tagsService.update(id, dto, userId);
+    const tag = await this.tagsService.update(tagId, dto, userId);
     return plainToInstance(TagResponseDto, tag);
   }
 
-  @Delete(':id')
+  @Delete(':tagId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
-    @Param('id') id: string,
+    @Param('tagId') tagId: string,
     @CurrentUser('id') userId: string,
   ): Promise<void> {
-    await this.tagsService.remove(id, userId);
+    await this.tagsService.remove(tagId, userId);
   }
 }

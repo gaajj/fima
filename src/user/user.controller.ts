@@ -13,7 +13,6 @@ import { UserService } from './user.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { EmailVerificationService } from 'src/auth/email-verification/email-verification.service';
 import { PublicUserDto } from './dto/public-user.dto';
@@ -57,8 +56,8 @@ export class UserController {
     await this.userService.remove(userId);
   }
 
-  @Get(':id')
-  async getUserById(@Param('id') userId: string): Promise<PublicUserDto> {
+  @Get(':userId')
+  async getUserById(@Param('userId') userId: string): Promise<PublicUserDto> {
     const user = await this.userService.findOne(userId);
     return plainToInstance(PublicUserDto, user);
   }

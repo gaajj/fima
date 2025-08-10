@@ -34,9 +34,9 @@ export class FileTypesController {
   }
 
   @Roles(Role.ADMIN)
-  @Patch(':id/fields')
+  @Patch(':typeId/fields')
   async upsertField(
-    @Param('id') typeId: string,
+    @Param('typeId') typeId: string,
     @Body() dto: UpsertFieldDto,
   ): Promise<FileTypeFieldResponseDto> {
     const fileTypeField = await this.svc.addOrUpdateField(typeId, dto);
@@ -44,9 +44,9 @@ export class FileTypesController {
   }
 
   @Roles(Role.ADMIN)
-  @Delete(':id/fields/:name')
+  @Delete(':typeId/fields/:name')
   async removeField(
-    @Param('id') typeId: string,
+    @Param('typeId') typeId: string,
     @Param('name') name: string,
   ): Promise<void> {
     await this.svc.removeField(typeId, name);

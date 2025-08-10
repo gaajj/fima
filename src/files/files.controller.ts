@@ -59,9 +59,9 @@ export class FilesController {
     return plainToInstance(FileResponseDto, fileUpload);
   }
 
-  @Patch(':id')
+  @Patch(':fileId')
   async update(
-    @Param('id') fileId: string,
+    @Param('fileId') fileId: string,
     @Body() dto: UpdateFileInfoDto,
     @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
@@ -69,18 +69,18 @@ export class FilesController {
     return plainToInstance(FileResponseDto, updated);
   }
 
-  @Delete(':id')
+  @Delete(':fileId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
-    @Param('id') fileId: string,
+    @Param('fileId') fileId: string,
     @CurrentUser('id') userId: string,
   ): Promise<void> {
     await this.filesService.remove(fileId, userId);
   }
 
-  @Patch(':id/type')
+  @Patch(':fileId/type')
   async setType(
-    @Param('id') fileId: string,
+    @Param('fileId') fileId: string,
     @Body() dto: SetFileTypeDto,
     @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
@@ -88,9 +88,9 @@ export class FilesController {
     return plainToInstance(FileResponseDto, updated);
   }
 
-  @Patch(':id/metadata')
+  @Patch(':fileId/metadata')
   async updateMetadata(
-    @Param('id') fileId: string,
+    @Param('fileId') fileId: string,
     @Body() dto: UpdateFileMetadataDto,
     @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
@@ -102,10 +102,10 @@ export class FilesController {
     return plainToInstance(FileResponseDto, updated);
   }
 
-  @Post(':id/tag')
+  @Post(':fileId/tag')
   @HttpCode(HttpStatus.OK)
   async addTagToFile(
-    @Param('id') fileId: string,
+    @Param('fileId') fileId: string,
     @Body() dto: AddTagDto,
     @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
@@ -113,20 +113,20 @@ export class FilesController {
     return plainToInstance(FileResponseDto, updated);
   }
 
-  @Delete(':id/tag/:tagId')
+  @Delete(':fileId/tag/:tagId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async removeTagFromFile(
-    @Param('id') fileId: string,
+    @Param('fileId') fileId: string,
     @Param('tagId') tagId: string,
     @CurrentUser('id') userId: string,
   ): Promise<void> {
     await this.filesService.removeTag(fileId, tagId, userId);
   }
 
-  @Post(':id/permissions')
+  @Post(':fileId/permissions')
   @HttpCode(HttpStatus.CREATED)
   async grantPermission(
-    @Param('id') fileId: string,
+    @Param('fileId') fileId: string,
     @Body() dto: AddPermissionDto,
     @CurrentUser('id') userId: string,
   ): Promise<FilePermissionResponseDto> {
@@ -134,10 +134,10 @@ export class FilesController {
     return plainToInstance(FilePermissionResponseDto, file);
   }
 
-  @Delete(':id/permissions/:permissionId')
+  @Delete(':fileId/permissions/:permissionId')
   @HttpCode(HttpStatus.NO_CONTENT)
   async revokePermission(
-    @Param('id') fileId: string,
+    @Param('fileId') fileId: string,
     @Param('permissionId') permissionId: string,
     @CurrentUser('id') userId: string,
   ): Promise<void> {
