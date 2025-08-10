@@ -23,6 +23,8 @@ import { UpdateFileInfoDto } from './dto/update-file-info.dto';
 import { AddTagDto } from './dto/add-tag.dto';
 import { SetFileTypeDto } from './file-types/dto/set-file-type.dto';
 import { UpdateFileMetadataDto } from './file-types/dto/update-file-metadata.dto';
+import { AddPermissionDto } from './dto/add-permission.dto';
+import { FilePermissionResponseDto } from './dto/file-permission-response.dto';
 
 @Controller('files')
 export class FilesController {
@@ -119,5 +121,26 @@ export class FilesController {
     @CurrentUser('id') userId: string,
   ): Promise<void> {
     await this.filesService.removeTag(fileId, tagId, userId);
+  }
+
+  @Post(':id/permissions')
+  @HttpCode(HttpStatus.CREATED)
+  async grantPermission(
+    @Param('id') fileId: string,
+    @Body() dto: AddPermissionDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<FilePermissionResponseDto> {
+    const file = await this.filesService.addPermission(fileId, dto, userId);
+    return plainToInstance(FilePermissionResponseDto, file);
+  }
+
+  @Delete(':id/permissions/:permissionId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async revokePermission(
+    @Param('id') fileId: string,
+    @Param('permissionId') permissionId: string,
+    @CurrentUser('id') userId: string,
+  ): Promise<void> {
+    await this.filesService.removePermission(fileId, permissionId, userId);
   }
 }

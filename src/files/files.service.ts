@@ -10,9 +10,11 @@ import { Repository } from 'typeorm';
 import { rm } from 'fs/promises';
 import { UpdateFileInfoDto } from './dto/update-file-info.dto';
 import { Tag } from './tags/entities/tag.entity';
-import { FileType } from './file-types/entities/file-type.entity';
 import Ajv from 'ajv';
 import { FileTypesService } from './file-types/file-types.service';
+import { AddPermissionDto } from './dto/add-permission.dto';
+import { FilePermission } from './entities/file-permission.entity';
+import { User } from 'src/user/entities/user.entity';
 
 const ajv = new Ajv({ allErrors: true });
 
@@ -28,7 +30,7 @@ export class FilesService {
 
   async findAll(): Promise<File[]> {
     return await this.fileRepo.find({
-      relations: ['type', 'tags', 'owner'],
+      relations: ['type', 'tags', 'owner', 'permissions', 'permissions.user'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -150,7 +152,7 @@ export class FilesService {
   ): Promise<void> {
     const file = await this.fileRepo.findOne({
       where: { id: fileId },
-      relations: ['tags'],
+      relations: ['tags', 'owner'],
     });
     if (!file)
       throw new NotFoundException(`File with ID '${fileId}' not found`);
@@ -159,5 +161,53 @@ export class FilesService {
 
     file.tags = file.tags.filter((t) => t.id !== tagId);
     await this.fileRepo.save(file);
+  }
+
+  async addPermission(
+    fileId: string,
+    dto: AddPermissionDto,
+    ownerId: string,
+  ): Promise<FilePermission> {
+    const file = await this.fileRepo.findOne({
+      where: { id: fileId },
+      relations: ['owner', 'permissions', 'permissions.user'],
+    });
+    if (!file)
+      throw new NotFoundException(`File with ID '${fileId}' not found`);
+    if (!file.owner || file.owner.id !== ownerId)
+      throw new ForbiddenException(`Not authorized`);
+
+    const existing = file.permissions.find(
+      (p) => p.user.id === dto.userId && p.permission === dto.permission,
+    );
+    if (existing) throw new BadRequestException('Permission already granted');
+
+    const permission = this.fileRepo.manager.create(FilePermission, {
+      file,
+      user: { id: dto.userId } as User,
+      permission: dto.permission,
+    });
+    await this.fileRepo.manager.save(permission);
+    return this.fileRepo.manager.findOneOrFail(FilePermission, {
+      where: { id: permission.id },
+      relations: ['user'],
+    });
+  }
+
+  async removePermission(
+    fileId: string,
+    permissionId: string,
+    ownerId: string,
+  ): Promise<void> {
+    const file = await this.fileRepo.findOne({
+      where: { id: fileId },
+      relations: ['owner'],
+    });
+    if (!file)
+      throw new NotFoundException(`File with ID '${fileId}' not found`);
+    if (!file.owner || file.owner.id !== ownerId)
+      throw new ForbiddenException(`Not authorized`);
+
+    await this.fileRepo.manager.delete(FilePermission, { id: permissionId });
   }
 }

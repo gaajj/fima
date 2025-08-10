@@ -1,4 +1,3 @@
-import { User } from 'src/user/entities/user.entity';
 import {
   Column,
   CreateDateColumn,
@@ -6,8 +5,9 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { PermissionType } from '../enums/permission-type.enum';
 import { File } from './file.entity';
+import { User } from 'src/user/entities/user.entity';
+import { PermissionType } from '../enums/permission-type.enum';
 
 @Entity('file_permissions')
 export class FilePermission {

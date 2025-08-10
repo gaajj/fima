@@ -2,6 +2,7 @@ import { PublicUserDto } from 'src/user/dto/public-user.dto';
 import { Expose, Type } from 'class-transformer';
 import { TagResponseDto } from '../tags/dto/tag-response.dto';
 import { MinimalFileTypeDto } from '../file-types/dto/file-type-response-minimal.dto';
+import { FilePermissionResponseDto } from './file-permission-response.dto';
 
 export class FileResponseDto {
   @Expose() id: string;
@@ -26,4 +27,8 @@ export class FileResponseDto {
   @Expose()
   @Type(() => TagResponseDto)
   tags: TagResponseDto[];
+
+  @Expose()
+  @Type(() => FilePermissionResponseDto)
+  permissions: FilePermissionResponseDto[];
 }
