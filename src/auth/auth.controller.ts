@@ -1,22 +1,26 @@
 import {
   Body,
   Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
   Ip,
+  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
 import { AuthService } from './auth.service';
-import { LocalAuthGuard } from './guards/local-auth.guard';
-import { RefreshAuthGuard } from './guards/refresh-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
-import { LoginRequestDto } from './dto/login.request.dto';
-import { AuthTokensResponseDto } from './dto/auth-tokens.response.dto';
-import { LoginResponseDto } from './dto/login.response.dto';
 import { UserAgent } from './decorators/user-agent.decorator';
-import { plainToInstance } from 'class-transformer';
+import { AuthTokensResponseDto } from './dto/auth-tokens.response.dto';
+import { LoginRequestDto } from './dto/login.request.dto';
+import { LoginResponseDto } from './dto/login.response.dto';
+import { SessionResponseDto } from './dto/session.response.dto';
+import { LocalAuthGuard } from './guards/local-auth.guard';
+import { RefreshAuthGuard } from './guards/refresh-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -52,5 +56,22 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   logout(@CurrentUser('sid') sessionId: string) {
     return this.authService.logout(sessionId);
+  }
+
+  @Get('sessions')
+  async listSessions(
+    @CurrentUser('id') userId: string,
+  ): Promise<SessionResponseDto[]> {
+    const sessions = await this.authService.listSessions(userId);
+    return plainToInstance(SessionResponseDto, sessions);
+  }
+
+  @Delete('sessions/:sessionId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async revokeSession(
+    @CurrentUser('id') userId: string,
+    @Param('sessionId') sessionId: string,
+  ): Promise<void> {
+    await this.authService.revokeSession(userId, sessionId);
   }
 }

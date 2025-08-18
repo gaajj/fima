@@ -1,16 +1,21 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { compare, hash } from 'bcrypt';
-import { UserService } from '../user/user.service';
-import { AuthJwtPayloadDto } from './types/auth-jwt-payload.type';
-import refreshJwtConfig from './config/refresh-jwt.config';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
+import { compare, hash } from 'bcrypt';
 import { EntityNotFoundError, Repository } from 'typeorm';
-import { User } from '../user/entities/user.entity';
 import { Session } from '../user/entities/session.entity';
+import { User } from '../user/entities/user.entity';
+import { UserService } from '../user/user.service';
+import refreshJwtConfig from './config/refresh-jwt.config';
 import { AuthTokensResponseDto } from './dto/auth-tokens.response.dto';
 import { LoginResponseDto } from './dto/login.response.dto';
+import { AuthJwtPayloadDto } from './types/auth-jwt-payload.type';
 
 @Injectable()
 export class AuthService {
@@ -170,5 +175,27 @@ export class AuthService {
     if (session.tokenVersion !== tokenVer)
       throw new UnauthorizedException('Access token outdated.');
     return { id: userId, role: session.user.role, sid: sessionId };
+  }
+
+  async listSessions(userId: string): Promise<Session[]> {
+    return this.sesRepo.find({
+      where: { user: { id: userId }, revoked: false },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async revokeSession(userId: string, sessionId: string): Promise<void> {
+    const session = await this.sesRepo.findOne({
+      where: { id: sessionId },
+      relations: ['user'],
+    });
+    if (!session) throw new UnauthorizedException('Session not found');
+    if (session.user.id !== userId)
+      throw new ForbiddenException('Cannot revoke another users session');
+
+    await this.rotateRefreshToken(sessionId, {
+      newHash: null,
+      bumpVersion: true,
+    });
   }
 }
