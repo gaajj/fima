@@ -12,23 +12,23 @@ import { UpdateFileInfoRequestDto } from './dto/update-file-info.request.dto';
 import { Tag } from './tags/entities/tag.entity';
 import Ajv from 'ajv';
 import { FileTypesService } from './file-types/file-types.service';
-import { AddPermissionRequestDto } from './dto/add-permission.request.dto';
-import { FilePermission } from './entities/file-permission.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Folder } from './folders/entities/folder.entity';
+import { AclEntry } from './entities/acl-entry.entity';
+import { AuthorizationService } from 'src/auth/authorization.service';
+import { AclRole } from './enums/acl-role.enum';
 
 const ajv = new Ajv({ allErrors: true });
 
 @Injectable()
 export class FilesService {
   constructor(
-    @InjectRepository(File)
-    private readonly fileRepo: Repository<File>,
-    @InjectRepository(Tag)
-    private readonly tagRepo: Repository<Tag>,
+    @InjectRepository(File) private readonly fileRepo: Repository<File>,
+    @InjectRepository(Tag) private readonly tagRepo: Repository<Tag>,
     private readonly fileTypesService: FileTypesService,
-    @InjectRepository(Folder)
-    private readonly folderRepo: Repository<Folder>,
+    @InjectRepository(Folder) private readonly folderRepo: Repository<Folder>,
+    @InjectRepository(AclEntry) private readonly aclRepo: Repository<AclEntry>,
+    private readonly authService: AuthorizationService,
   ) {}
 
   async findAll(): Promise<File[]> {
@@ -37,8 +37,8 @@ export class FilesService {
         'type',
         'tags',
         'owner',
-        'permissions',
-        'permissions.user',
+        'aclEntries',
+        'aclEntries.user',
         'folder',
       ],
       order: { createdAt: 'DESC' },
@@ -52,9 +52,11 @@ export class FilesService {
         'type',
         'tags',
         'owner',
-        'permissions',
-        'permissions.user',
+        'aclEntries',
+        'aclEntries.user',
         'folder',
+        'folder.owner',
+        'folder.parent',
       ],
     });
     if (!file)
@@ -64,7 +66,26 @@ export class FilesService {
 
   async create(data: Partial<File>): Promise<File> {
     const file = this.fileRepo.create({ metadata: {}, ...data });
-    return this.fileRepo.save(file);
+    const saved = await this.fileRepo.save(file);
+    if (saved.owner?.id) {
+      await this.ensureOwnerAclForFile(saved.id, saved.owner.id);
+    }
+    return saved;
+  }
+
+  private async ensureOwnerAclForFile(fileId: string, ownerId: string) {
+    const exists = await this.aclRepo.findOne({
+      where: { file: { id: fileId }, user: { id: ownerId } },
+    });
+    if (!exists) {
+      await this.aclRepo.save(
+        this.aclRepo.create({
+          file: { id: fileId } as File,
+          user: { id: ownerId } as User,
+          role: AclRole.OWNER,
+        }),
+      );
+    }
   }
 
   // Currently can only update the displayName
@@ -74,30 +95,17 @@ export class FilesService {
     dto: UpdateFileInfoRequestDto,
     userId: string,
   ): Promise<File> {
-    const file = await this.fileRepo.findOne({
-      where: { id: fileId },
-      relations: ['owner'],
-    });
-    if (!file) {
-      throw new NotFoundException(`File with ID '${fileId}' not found`);
-    }
-    if (!file.owner || file.owner.id !== userId) {
+    const file = await this.findOneOrFail(fileId);
+    if (!(await this.authService.canEditFile(file, userId))) {
       throw new ForbiddenException(`Not authorized to update this file`);
     }
-
     file.displayName = dto.displayName;
     return this.fileRepo.save(file);
   }
 
   async remove(fileId: string, userId: string): Promise<void> {
-    const file = await this.fileRepo.findOne({
-      where: { id: fileId },
-      relations: ['owner'],
-    });
-    if (!file) {
-      throw new NotFoundException(`File with ID '${fileId}' not found`);
-    }
-    if (!file.owner || file.owner.id !== userId) {
+    const file = await this.findOneOrFail(fileId);
+    if (!(await this.authService.canDeleteFile(file, userId))) {
       throw new ForbiddenException(`Not authorized to delete this file`);
     }
 
@@ -107,14 +115,10 @@ export class FilesService {
   }
 
   async setType(fileId: string, typeId: string, userId: string): Promise<File> {
-    const file = await this.fileRepo.findOne({
-      where: { id: fileId },
-      relations: ['owner', 'type'],
-    });
-    if (!file)
-      throw new NotFoundException(`File with ID '${fileId}' not found`);
-    if (!file.owner || file.owner.id !== userId)
+    const file = await this.findOneOrFail(fileId);
+    if (!(await this.authService.canEditFile(file, userId))) {
       throw new ForbiddenException(`Not authorized`);
+    }
 
     const type = await this.fileTypesService.findOneOrFail(typeId);
 
@@ -128,19 +132,15 @@ export class FilesService {
     metadata: Record<string, any>,
     userId: string,
   ): Promise<File> {
-    const file = await this.fileRepo.findOne({
-      where: { id: fileId },
-      relations: ['owner', 'type'],
-    });
-    if (!file)
-      throw new NotFoundException(`File with ID '${fileId}' not found`);
-    if (!file.owner || file.owner.id !== userId)
+    const file = await this.findOneOrFail(fileId);
+    if (!(await this.authService.canEditFile(file, userId))) {
       throw new ForbiddenException(`Not authorized`);
+    }
+
     if (!file.type) throw new BadRequestException('File has no type set');
 
     const schema = await this.fileTypesService.getJsonSchema(file.type.id);
     const validate = ajv.compile(schema);
-
     if (!validate(metadata)) {
       throw new BadRequestException({
         message: 'Invalid metadata',
@@ -190,62 +190,55 @@ export class FilesService {
     await this.fileRepo.save(file);
   }
 
-  async addPermission(
+  async addAclEntry(
     fileId: string,
-    dto: AddPermissionRequestDto,
-    ownerId: string,
-  ): Promise<FilePermission> {
-    const file = await this.fileRepo.findOne({
-      where: { id: fileId },
-      relations: ['owner', 'permissions', 'permissions.user'],
-    });
-    if (!file)
-      throw new NotFoundException(`File with ID '${fileId}' not found`);
-    if (!file.owner || file.owner.id !== ownerId)
+    targetUserId: string,
+    role: AclRole,
+    actorId: string,
+  ) {
+    const file = await this.findOneOrFail(fileId);
+    if (!(await this.authService.canShareFile(file, actorId)))
       throw new ForbiddenException(`Not authorized`);
 
-    const existing = file.permissions.find(
-      (p) => p.user.id === dto.userId && p.permission === dto.permission,
-    );
-    if (existing) throw new BadRequestException('Permission already granted');
-
-    const permission = this.fileRepo.manager.create(FilePermission, {
-      file,
-      user: { id: dto.userId } as User,
-      permission: dto.permission,
+    const existing = await this.aclRepo.findOne({
+      where: { file: { id: fileId }, user: { id: targetUserId } },
     });
-    await this.fileRepo.manager.save(permission);
-    return this.fileRepo.manager.findOneOrFail(FilePermission, {
-      where: { id: permission.id },
+    if (existing) {
+      existing.role = role;
+      await this.aclRepo.save(existing);
+      return this.aclRepo.findOneOrFail({
+        where: { id: existing.id },
+        relations: ['user'],
+      });
+    }
+
+    const entry = this.aclRepo.create({
+      file,
+      user: { id: targetUserId } as User,
+      role,
+    });
+    await this.aclRepo.save(entry);
+    return this.aclRepo.findOneOrFail({
+      where: { id: entry.id },
       relations: ['user'],
     });
   }
 
-  async removePermission(
+  async removeAclEntry(
     fileId: string,
-    permissionId: string,
-    ownerId: string,
+    entryId: string,
+    actorId: string,
   ): Promise<void> {
-    const file = await this.fileRepo.findOne({
-      where: { id: fileId },
-      relations: ['owner'],
-    });
-    if (!file)
-      throw new NotFoundException(`File with ID '${fileId}' not found`);
-    if (!file.owner || file.owner.id !== ownerId)
-      throw new ForbiddenException(`Not authorized`);
-
-    await this.fileRepo.manager.delete(FilePermission, { id: permissionId });
+    const file = await this.findOneOrFail(fileId);
+    if (!(await this.authService.canShareFile(file, actorId))) {
+      throw new ForbiddenException('Not authorized');
+    }
+    await this.aclRepo.delete({ id: entryId, file: { id: fileId } as any });
   }
 
   async moveToFolder(fileId: string, folderId: string, userId: string) {
-    const file = await this.fileRepo.findOne({
-      where: { id: fileId },
-      relations: ['owner', 'folder'],
-    });
-    if (!file)
-      throw new NotFoundException(`File with ID '${fileId}' not found`);
-    if (!file.owner || file.owner.id !== userId)
+    const file = await this.findOneOrFail(fileId);
+    if (!(await this.authService.canMoveFile(file, userId)))
       throw new ForbiddenException('Not authorized');
 
     const folder = await this.folderRepo.findOne({
@@ -253,7 +246,7 @@ export class FilesService {
       relations: ['owner'],
     });
     if (!folder) throw new NotFoundException(`Folder '${folderId}' not found`);
-    if (!folder.owner || folder.owner.id !== userId)
+    if (!(await this.authService.canEditFolder(folder, userId)))
       throw new ForbiddenException('Not authorized for target folder');
 
     file.folder = folder;

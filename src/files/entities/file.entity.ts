@@ -11,11 +11,11 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Tag } from '../tags/entities/tag.entity';
-import { FilePermission } from './file-permission.entity';
 import { SharedLink } from './shared-link.entity';
 import { FileComment } from './file-comment.entity';
 import { FileType } from '../file-types/entities/file-type.entity';
 import { Folder } from '../folders/entities/folder.entity';
+import { AclEntry } from './acl-entry.entity';
 
 @Entity('files')
 export class File {
@@ -63,8 +63,8 @@ export class File {
   })
   tags: Tag[];
 
-  @OneToMany(() => FilePermission, (p) => p.file, { cascade: true })
-  permissions: FilePermission[];
+  @OneToMany(() => AclEntry, (a) => a.file, { cascade: true })
+  aclEntries: AclEntry[];
 
   @OneToMany(() => SharedLink, (l) => l.file, { cascade: true })
   sharedLinks: SharedLink[];

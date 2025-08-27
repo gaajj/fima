@@ -1,3 +1,4 @@
+import { AclEntry } from 'src/files/entities/acl-entry.entity';
 import { File } from 'src/files/entities/file.entity';
 import { User } from 'src/user/entities/user.entity';
 import {
@@ -37,6 +38,9 @@ export class Folder {
 
   @OneToMany(() => File, (f) => f.folder)
   files: File[];
+
+  @OneToMany(() => AclEntry, (a) => a.folder, { cascade: true })
+  aclEntries: AclEntry[];
 
   @CreateDateColumn()
   createdAt: Date;

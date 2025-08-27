@@ -14,9 +14,9 @@ import { UserProfile } from './user-profile.entity';
 import { Session } from './session.entity';
 import { Exclude } from 'class-transformer';
 import { EmailVerification } from '../../auth/email-verification/entities/email-verification.entity';
-import { FilePermission } from 'src/files/entities/file-permission.entity';
 import { File } from 'src/files/entities/file.entity';
 import { Tag } from 'src/files/tags/entities/tag.entity';
+import { AclEntry } from 'src/files/entities/acl-entry.entity';
 
 @Entity('users')
 export class User {
@@ -61,8 +61,8 @@ export class User {
   @OneToMany(() => EmailVerification, (v) => v.user)
   emailVerifications: EmailVerification[];
 
-  @OneToMany(() => FilePermission, (p) => p.user)
-  filePermissions: FilePermission[];
+  @OneToMany(() => AclEntry, (a) => a.user)
+  aclEntries: AclEntry[];
 
   @OneToMany(() => File, (f) => f.owner)
   files: File[];

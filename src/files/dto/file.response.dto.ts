@@ -2,8 +2,8 @@ import { PublicUserResponseDto } from 'src/user/dto/public-user.response.dto';
 import { Expose, Type } from 'class-transformer';
 import { TagResponseDto } from '../tags/dto/tag.response.dto';
 import { FileTypeMinimalDto } from '../file-types/dto/file-type-minimal.response.dto';
-import { FilePermissionResponseDto } from './file-permission.response.dto';
 import { FolderMinimalResponseDto } from '../folders/dto/folder-minimal.response.dto';
+import { AclEntryResponseDto } from './acl-entry.response.dto';
 
 export class FileResponseDto {
   @Expose() id: string;
@@ -34,6 +34,6 @@ export class FileResponseDto {
   tags: TagResponseDto[];
 
   @Expose()
-  @Type(() => FilePermissionResponseDto)
-  permissions: FilePermissionResponseDto[];
+  @Type(() => AclEntryResponseDto)
+  aclEntries: AclEntryResponseDto[];
 }

@@ -12,9 +12,9 @@ import {
   UploadedFile,
   UseInterceptors,
   Res,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FilesService } from './files.service';
-import { Public } from 'src/auth/decorators/public.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { plainToInstance } from 'class-transformer';
@@ -24,18 +24,22 @@ import { UpdateFileInfoRequestDto } from './dto/update-file-info.request.dto';
 import { AddTagRequestDto } from './dto/add-tag.request.dto';
 import { SetFileTypeRequestDto } from './file-types/dto/set-file-type.request.dto';
 import { UpdateFileMetadataRequestDto } from './file-types/dto/update-file-metadata.request.dto';
-import { AddPermissionRequestDto } from './dto/add-permission.request.dto';
-import { FilePermissionResponseDto } from './dto/file-permission.response.dto';
 import { Response } from 'express';
 import { createReadStream } from 'fs';
 import { UploadFileRequestDto } from './dto/upload-file.request.dto';
 import { MoveFileToFolderRequestDto } from './dto/move-file-to-folder.request.dto';
+import { AuthorizationService } from 'src/auth/authorization.service';
+import { AddAclEntryRequestDto } from './dto/add-acl-entry.request.dto';
+import { AclRole } from './enums/acl-role.enum';
+import { AclEntryResponseDto } from './dto/acl-entry.response.dto';
 
 @Controller('files')
 export class FilesController {
-  constructor(private readonly filesService: FilesService) {}
+  constructor(
+    private readonly filesService: FilesService,
+    private readonly authService: AuthorizationService,
+  ) {}
 
-  @Public()
   @Get()
   async getAll(): Promise<FileResponseDto[]> {
     const files = await this.filesService.findAll();
@@ -43,18 +47,26 @@ export class FilesController {
   }
 
   @Get(':fileId')
-  async getOne(@Param('fileId') fileId: string): Promise<FileResponseDto> {
+  async getOne(
+    @Param('fileId') fileId: string,
+    @CurrentUser('id') userId: string,
+  ): Promise<FileResponseDto> {
     const file = await this.filesService.findOneOrFail(fileId);
+    if (!(await this.authService.canViewFile(file, userId)))
+      throw new ForbiddenException('Not authorized');
     return plainToInstance(FileResponseDto, file);
   }
 
-  @Public()
   @Get(':fileId/download')
   async download(
     @Param('fileId') fileId: string,
+    @CurrentUser('id') userId: string,
     @Res() res: Response,
   ): Promise<void> {
     const file = await this.filesService.findOneOrFail(fileId);
+    if (!(await this.authService.canViewFile(file, userId)))
+      throw new ForbiddenException('Not authorized');
+
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader(
       'Content-Disposition',
@@ -76,7 +88,9 @@ export class FilesController {
     @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
     if (!file) {
-      throw new BadRequestException('No file provided or invalid file type');
+      throw new BadRequestException(
+        'No file provided or file was rejected by upload policy',
+      );
     }
 
     let created = await this.filesService.create({
@@ -98,12 +112,12 @@ export class FilesController {
       created = await this.filesService.findOneOrFail(created.id);
     }
     if (dto?.folderId) {
-      const file = await this.filesService.findOneOrFail(created.id);
-      const updated = await this.filesService.moveToFolder(
-        file.id,
+      const moved = await this.filesService.moveToFolder(
+        created.id,
         dto.folderId,
         userId,
       );
+      created = moved;
     }
 
     return plainToInstance(FileResponseDto, created);
@@ -173,25 +187,30 @@ export class FilesController {
     await this.filesService.removeTag(fileId, tagId, userId);
   }
 
-  @Post(':fileId/permissions')
+  @Post(':fileId/acl')
   @HttpCode(HttpStatus.CREATED)
-  async grantPermission(
+  async addAcl(
     @Param('fileId') fileId: string,
-    @Body() dto: AddPermissionRequestDto,
-    @CurrentUser('id') userId: string,
-  ): Promise<FilePermissionResponseDto> {
-    const file = await this.filesService.addPermission(fileId, dto, userId);
-    return plainToInstance(FilePermissionResponseDto, file);
+    @Body() dto: AddAclEntryRequestDto,
+    @CurrentUser('id') actorId: string,
+  ): Promise<AclEntryResponseDto> {
+    const entry = await this.filesService.addAclEntry(
+      fileId,
+      dto.userId,
+      dto.role as AclRole,
+      actorId,
+    );
+    return plainToInstance(AclEntryResponseDto, entry);
   }
 
-  @Delete(':fileId/permissions/:permissionId')
+  @Delete(':fileId/acl/:entryId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async revokePermission(
+  async removeAcl(
     @Param('fileId') fileId: string,
-    @Param('permissionId') permissionId: string,
-    @CurrentUser('id') userId: string,
+    @Param('entryId') entryId: string,
+    @CurrentUser('id') actorId: string,
   ): Promise<void> {
-    await this.filesService.removePermission(fileId, permissionId, userId);
+    await this.filesService.removeAclEntry(fileId, entryId, actorId);
   }
 
   @Patch(':fileId/folder')

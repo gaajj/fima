@@ -1,36 +1,38 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { File } from './entities/file.entity';
-import { FilePermission } from './entities/file-permission.entity';
 import { SharedLink } from './entities/shared-link.entity';
 import { FileComment } from './entities/file-comment.entity';
 import { FilesService } from './files.service';
 import { FilesController } from './files.controller';
 import { MulterModule } from '@nestjs/platform-express';
-import { imageFileFilter, multerStorage } from './utils/file-upload.utils';
-import { UPLOAD_CONFIG } from './utils/upload.constats';
+import { anyFileFilter, multerStorage } from './utils/file-upload.utils';
 import { TagsModule } from './tags/tags.module';
 import { Tag } from './tags/entities/tag.entity';
 import { FileTypesModule } from './file-types/file-types.module';
 import { FoldersModule } from './folders/folders.module';
 import { Folder } from './folders/entities/folder.entity';
+import { UPLOAD_CONFIG } from './utils/upload.constants';
+import { AclEntry } from './entities/acl-entry.entity';
+import { AuthorizationModule } from 'src/auth/authorization.module';
 
 @Module({
   imports: [
     TagsModule,
     FileTypesModule,
     FoldersModule,
+    AuthorizationModule,
     TypeOrmModule.forFeature([
       File,
       Tag,
-      FilePermission,
+      AclEntry,
       SharedLink,
       FileComment,
       Folder,
     ]),
     MulterModule.register({
       storage: multerStorage,
-      fileFilter: imageFileFilter,
+      fileFilter: anyFileFilter,
       limits: { fileSize: UPLOAD_CONFIG.MAX_FILE_SIZE },
     }),
   ],

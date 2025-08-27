@@ -69,7 +69,7 @@ export class FoldersController {
     );
     return plainToInstance(FolderContentsResponseDto, {
       folder: { ...folder, parentId: folder.parent?.id },
-      subfolders: subFolders.map((f) => ({ ...f, parentId: f.parent?.id })),
+      subFolders: subFolders.map((f) => ({ ...f, parentId: f.parent?.id })),
       files,
     });
   }
