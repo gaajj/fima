@@ -11,6 +11,7 @@ import {
   Post,
   UploadedFile,
   UseInterceptors,
+  Res,
 } from '@nestjs/common';
 import { FilesService } from './files.service';
 import { Public } from 'src/auth/decorators/public.decorator';
@@ -25,6 +26,10 @@ import { SetFileTypeRequestDto } from './file-types/dto/set-file-type.request.dt
 import { UpdateFileMetadataRequestDto } from './file-types/dto/update-file-metadata.request.dto';
 import { AddPermissionRequestDto } from './dto/add-permission.request.dto';
 import { FilePermissionResponseDto } from './dto/file-permission.response.dto';
+import { Response } from 'express';
+import { createReadStream } from 'fs';
+import { UploadFileRequestDto } from './dto/upload-file.request.dto';
+import { MoveFileToFolderRequestDto } from './dto/move-file-to-folder.request.dto';
 
 @Controller('files')
 export class FilesController {
@@ -37,18 +42,44 @@ export class FilesController {
     return plainToInstance(FileResponseDto, files);
   }
 
+  @Get(':fileId')
+  async getOne(@Param('fileId') fileId: string): Promise<FileResponseDto> {
+    const file = await this.filesService.findOneOrFail(fileId);
+    return plainToInstance(FileResponseDto, file);
+  }
+
+  @Public()
+  @Get(':fileId/download')
+  async download(
+    @Param('fileId') fileId: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const file = await this.filesService.findOneOrFail(fileId);
+    res.setHeader('Content-Type', file.mimeType);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodeURIComponent(file.originalName)}"`,
+    );
+    const stream = createReadStream(file.path);
+    stream.on('error', () => {
+      res.status(HttpStatus.NOT_FOUND).send('File not found');
+    });
+    stream.pipe(res);
+  }
+
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.CREATED)
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
+    @Body() dto: UploadFileRequestDto,
     @CurrentUser('id') userId: string,
   ): Promise<FileResponseDto> {
     if (!file) {
       throw new BadRequestException('No file provided or invalid file type');
     }
 
-    const fileUpload = await this.filesService.create({
+    let created = await this.filesService.create({
       path: file.path,
       originalName: file.originalname,
       displayName: file.filename,
@@ -56,7 +87,26 @@ export class FilesController {
       size: file.size.toString(),
       owner: { id: userId } as User,
     });
-    return plainToInstance(FileResponseDto, fileUpload);
+
+    if (dto?.typeId) {
+      created = await this.filesService.setType(created.id, dto.typeId, userId);
+    }
+    if (dto?.tagIds?.length) {
+      for (const tagId of dto.tagIds) {
+        await this.filesService.addTag(created.id, tagId, userId);
+      }
+      created = await this.filesService.findOneOrFail(created.id);
+    }
+    if (dto?.folderId) {
+      const file = await this.filesService.findOneOrFail(created.id);
+      const updated = await this.filesService.moveToFolder(
+        file.id,
+        dto.folderId,
+        userId,
+      );
+    }
+
+    return plainToInstance(FileResponseDto, created);
   }
 
   @Patch(':fileId')
@@ -142,5 +192,19 @@ export class FilesController {
     @CurrentUser('id') userId: string,
   ): Promise<void> {
     await this.filesService.removePermission(fileId, permissionId, userId);
+  }
+
+  @Patch(':fileId/folder')
+  async moveToFolder(
+    @Param('fileId') fileId: string,
+    @Body() dto: MoveFileToFolderRequestDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<FileResponseDto> {
+    const updated = await this.filesService.moveToFolder(
+      fileId,
+      dto.folderId,
+      userId,
+    );
+    return plainToInstance(FileResponseDto, updated);
   }
 }

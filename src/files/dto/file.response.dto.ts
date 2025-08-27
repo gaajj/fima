@@ -3,6 +3,7 @@ import { Expose, Type } from 'class-transformer';
 import { TagResponseDto } from '../tags/dto/tag.response.dto';
 import { FileTypeMinimalDto } from '../file-types/dto/file-type-minimal.response.dto';
 import { FilePermissionResponseDto } from './file-permission.response.dto';
+import { FolderMinimalResponseDto } from '../folders/dto/folder-minimal.response.dto';
 
 export class FileResponseDto {
   @Expose() id: string;
@@ -12,6 +13,10 @@ export class FileResponseDto {
   @Expose() size: string;
   @Expose() createdAt: Date;
   @Expose() updatedAt: Date;
+
+  @Expose()
+  @Type(() => FolderMinimalResponseDto)
+  folder?: FolderMinimalResponseDto;
 
   @Expose()
   @Type(() => PublicUserResponseDto)

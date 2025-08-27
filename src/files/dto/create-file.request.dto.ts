@@ -4,10 +4,9 @@ export class CreateFileRequestDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  readonly categories?: string[];
+  readonly tags?: string[];
 
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  readonly tags?: string[];
+  @IsString()
+  readonly typeId?: string;
 }

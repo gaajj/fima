@@ -15,6 +15,7 @@ import { FilePermission } from './file-permission.entity';
 import { SharedLink } from './shared-link.entity';
 import { FileComment } from './file-comment.entity';
 import { FileType } from '../file-types/entities/file-type.entity';
+import { Folder } from '../folders/entities/folder.entity';
 
 @Entity('files')
 export class File {
@@ -47,6 +48,12 @@ export class File {
     onDelete: 'SET NULL',
   })
   owner?: User;
+
+  @ManyToOne(() => Folder, (f) => f.files, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  folder?: Folder;
 
   @ManyToMany(() => Tag, (t) => t.files, { cascade: true })
   @JoinTable({

@@ -12,17 +12,21 @@ import { UPLOAD_CONFIG } from './utils/upload.constats';
 import { TagsModule } from './tags/tags.module';
 import { Tag } from './tags/entities/tag.entity';
 import { FileTypesModule } from './file-types/file-types.module';
+import { FoldersModule } from './folders/folders.module';
+import { Folder } from './folders/entities/folder.entity';
 
 @Module({
   imports: [
     TagsModule,
     FileTypesModule,
+    FoldersModule,
     TypeOrmModule.forFeature([
       File,
       Tag,
       FilePermission,
       SharedLink,
       FileComment,
+      Folder,
     ]),
     MulterModule.register({
       storage: multerStorage,

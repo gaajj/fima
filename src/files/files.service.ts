@@ -15,6 +15,7 @@ import { FileTypesService } from './file-types/file-types.service';
 import { AddPermissionRequestDto } from './dto/add-permission.request.dto';
 import { FilePermission } from './entities/file-permission.entity';
 import { User } from 'src/user/entities/user.entity';
+import { Folder } from './folders/entities/folder.entity';
 
 const ajv = new Ajv({ allErrors: true });
 
@@ -26,13 +27,39 @@ export class FilesService {
     @InjectRepository(Tag)
     private readonly tagRepo: Repository<Tag>,
     private readonly fileTypesService: FileTypesService,
+    @InjectRepository(Folder)
+    private readonly folderRepo: Repository<Folder>,
   ) {}
 
   async findAll(): Promise<File[]> {
     return await this.fileRepo.find({
-      relations: ['type', 'tags', 'owner', 'permissions', 'permissions.user'],
+      relations: [
+        'type',
+        'tags',
+        'owner',
+        'permissions',
+        'permissions.user',
+        'folder',
+      ],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async findOneOrFail(fileId: string): Promise<File> {
+    const file = await this.fileRepo.findOne({
+      where: { id: fileId },
+      relations: [
+        'type',
+        'tags',
+        'owner',
+        'permissions',
+        'permissions.user',
+        'folder',
+      ],
+    });
+    if (!file)
+      throw new NotFoundException(`File with ID '${fileId}' not found`);
+    return file;
   }
 
   async create(data: Partial<File>): Promise<File> {
@@ -209,5 +236,27 @@ export class FilesService {
       throw new ForbiddenException(`Not authorized`);
 
     await this.fileRepo.manager.delete(FilePermission, { id: permissionId });
+  }
+
+  async moveToFolder(fileId: string, folderId: string, userId: string) {
+    const file = await this.fileRepo.findOne({
+      where: { id: fileId },
+      relations: ['owner', 'folder'],
+    });
+    if (!file)
+      throw new NotFoundException(`File with ID '${fileId}' not found`);
+    if (!file.owner || file.owner.id !== userId)
+      throw new ForbiddenException('Not authorized');
+
+    const folder = await this.folderRepo.findOne({
+      where: { id: folderId },
+      relations: ['owner'],
+    });
+    if (!folder) throw new NotFoundException(`Folder '${folderId}' not found`);
+    if (!folder.owner || folder.owner.id !== userId)
+      throw new ForbiddenException('Not authorized for target folder');
+
+    file.folder = folder;
+    return this.fileRepo.save(file);
   }
 }
