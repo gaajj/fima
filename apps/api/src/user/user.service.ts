@@ -5,7 +5,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { DataSource, FindOneOptions, Not, Repository } from 'typeorm';
+import {
+  DataSource,
+  FindOneOptions,
+  Repository,
+  QueryFailedError,
+} from 'typeorm';
 import { CreateUserRequestDto } from './dto/create-user.request.dto';
 import { UserCredential } from './entities/user-credential.entity';
 import { UserProfile } from './entities/user-profile.entity';
@@ -40,43 +45,31 @@ export class UserService {
   }
 
   async create(dto: CreateUserRequestDto): Promise<User> {
-    const usernameExists = await this.userRepo.findOne({
-      where: { username: dto.username },
-    });
-    if (usernameExists) {
-      throw new BadRequestException(
-        `Username '${dto.username}' already exists`,
-      );
-    }
-
-    const emailExists = await this.userRepo.findOne({
-      where: { email: dto.email },
-    });
-    if (emailExists) {
-      throw new BadRequestException(`Email '${dto.email}' already exists`);
-    }
-
     return this.dataSource.transaction(async (manager) => {
       const user = manager.create(User, {
         username: dto.username,
         email: dto.email,
       });
-      await manager.save(user);
+      try {
+        await manager.save(user);
 
-      await manager.save(
-        manager.create(UserCredential, {
-          user,
-          userId: user.id,
-          hashedPassword: dto.password,
-        }),
-      );
+        await manager.save(
+          manager.create(UserCredential, {
+            user,
+            userId: user.id,
+            hashedPassword: dto.password,
+          }),
+        );
 
-      await manager.save(
-        manager.create(UserProfile, {
-          user,
-          userId: user.id,
-        }),
-      );
+        await manager.save(
+          manager.create(UserProfile, {
+            user,
+            userId: user.id,
+          }),
+        );
+      } catch (error) {
+        this.handleUniqueConstraint(error, dto);
+      }
 
       const findOptions: FindOneOptions<User> = {
         where: { id: user.id },
@@ -86,34 +79,22 @@ export class UserService {
     });
   }
 
-  async update(userId: string, dto: UpdateUserRequestDto): Promise<User | null> {
+  async update(
+    userId: string,
+    dto: UpdateUserRequestDto,
+  ): Promise<User | null> {
     const existingUser = await this.findOne(userId);
     if (!existingUser) {
       throw new NotFoundException(`User with ID '${userId}' not found`);
     }
 
-    if (dto.username) {
-      const conflict = await this.userRepo.findOne({
-        where: { username: dto.username, id: Not(userId) },
-      });
-      if (conflict) {
-        throw new BadRequestException(
-          `Username '${dto.username}' already exists`,
-        );
-      }
-    }
-    if (dto.email) {
-      const conflict = await this.userRepo.findOne({
-        where: { email: dto.email, id: Not(userId) },
-      });
-      if (conflict) {
-        throw new BadRequestException(`Email '${dto.email}' already exists`);
-      }
-    }
-
     const { profile, ...userProps } = dto;
     if (Object.keys(userProps).length) {
-      await this.userRepo.update({ id: userId }, userProps);
+      try {
+        await this.userRepo.update({ id: userId }, userProps);
+      } catch (error) {
+        this.handleUniqueConstraint(error, userProps);
+      }
     }
 
     if (profile && Object.keys(profile).length) {
@@ -129,5 +110,31 @@ export class UserService {
       throw new NotFoundException(`User with ID '${userId}' not found`);
     }
     await this.userRepo.softDelete({ id: userId });
+  }
+
+  private handleUniqueConstraint(
+    error: unknown,
+    payload?: { username?: string; email?: string },
+  ): never {
+    if (error instanceof QueryFailedError) {
+      const err = error as QueryFailedError & Record<string, unknown>;
+      if (typeof err.code === 'string' && err.code === '23505') {
+        const detail = typeof err.detail === 'string' ? err.detail : undefined;
+        if (detail?.includes('username')) {
+          throw new BadRequestException(
+            `Username '${payload?.username}' already exists`,
+          );
+        }
+        if (detail?.includes('email')) {
+          throw new BadRequestException(
+            `Email '${payload?.email}' already exists`,
+          );
+        }
+        throw new BadRequestException(
+          'Duplicate key value violates unique constraint',
+        );
+      }
+    }
+    throw error;
   }
 }
