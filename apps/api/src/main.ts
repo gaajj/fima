@@ -14,6 +14,8 @@ async function bootstrap() {
 
   const logger = new Logger('Bootstrap');
 
+  app.setGlobalPrefix('api');
+
   // Middlewares
   app.use(helmet());
   app.use(
