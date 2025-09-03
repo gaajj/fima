@@ -10,8 +10,8 @@
     "api:start": "npm run start --workspace=api",
     "api:lint": "npm run lint --workspace=api",
     "api:test": "npm run test --workspace=api",
-    "web:dev": "npm run dev --workspace=web",
-    "dev": "concurrently -n API,WEB -c blue, green \"npm:api:dev\" \"npm:web:dev\""
+    "client:dev": "npm run dev --workspace=client",
+    "dev": "concurrently -n API,CLIENT -c blue, green \"npm:api:dev\" \"npm:client:dev\""
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
